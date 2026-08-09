@@ -58,21 +58,21 @@ export default function Tokenomics() {
       title: "Ecosystem",
       lock: "50% unlocked at launch",
       release:
-        "Remaining 50% released gradually for 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
+        "Remaining 50% released gradually over 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
     },
 
     {
       title: "Treasury",
-      lock: "locked at launch",
+      lock: "100% locked at launch",
       release:
         "Reserved for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
     },
 
     {
       title: "Marketing",
-      lock: "100% Unlocked at launch",
+      lock: "100% unlocked at launch",
       release:
-        "Will be released gradually to support awareness campaigns, partnerships, content creation, and community growth.",
+        "Available at launch to support awareness campaigns, partnerships, content creation, and community growth.",
     },
 
     {
@@ -94,6 +94,7 @@ export default function Tokenomics() {
       "
     >
       <div className="mx-auto max-w-6xl">
+
         <h2
           className="
           text-center
@@ -155,7 +156,9 @@ export default function Tokenomics() {
         </h3>
 
         <div className="mt-8 space-y-6">
+
           {allocations.map((item) => (
+
             <div
               key={item.name}
               className="
@@ -164,12 +167,14 @@ export default function Tokenomics() {
               p-5
               "
             >
+
               <div
                 className="
                 flex
                 justify-between
                 "
               >
+
                 <h4 className="font-bold">
                   {item.name}
                 </h4>
@@ -182,6 +187,7 @@ export default function Tokenomics() {
                 >
                   {item.percentage}
                 </span>
+
               </div>
 
               <div
@@ -192,6 +198,7 @@ export default function Tokenomics() {
                 bg-gray-800
                 "
               >
+
                 <div
                   className={`
                   h-3
@@ -202,6 +209,7 @@ export default function Tokenomics() {
                     width: item.percentage,
                   }}
                 />
+
               </div>
 
               <p className="mt-3 text-gray-300">
@@ -211,8 +219,11 @@ export default function Tokenomics() {
               <p className="text-sm text-gray-400">
                 {item.purpose}
               </p>
+
             </div>
+
           ))}
+
         </div>
 
         {/* Vesting */}
@@ -227,6 +238,12 @@ export default function Tokenomics() {
           Vesting & Transparency
         </h3>
 
+        <p className="mt-4 max-w-3xl text-gray-400">
+          Token allocations are structured to support long-term ecosystem
+          development, responsible treasury management, and transparent
+          team commitment. Applicable vesting schedules extend over 24 months.
+        </p>
+
         <div
           className="
           mt-8
@@ -235,7 +252,9 @@ export default function Tokenomics() {
           md:grid-cols-2
           "
         >
+
           {vesting.map((item) => (
+
             <div
               key={item.title}
               className="
@@ -246,6 +265,7 @@ export default function Tokenomics() {
               p-6
               "
             >
+
               <h4
                 className="
                 text-xl
@@ -263,8 +283,11 @@ export default function Tokenomics() {
               <p className="text-gray-300">
                 📅 {item.release}
               </p>
+
             </div>
+
           ))}
+
         </div>
 
         {/* Philosophy */}
@@ -279,6 +302,7 @@ export default function Tokenomics() {
           p-8
           "
         >
+
           <h3
             className="
             text-3xl
@@ -294,7 +318,9 @@ export default function Tokenomics() {
             and long-term ecosystem growth through responsible token
             management.
           </p>
+
         </div>
+
       </div>
     </section>
   );
@@ -318,6 +344,7 @@ function InfoCard({
       text-center
       "
     >
+
       <h4 className="text-gray-400">
         {title}
       </h4>
@@ -332,6 +359,7 @@ function InfoCard({
       >
         {value}
       </p>
+
     </div>
   );
 }
