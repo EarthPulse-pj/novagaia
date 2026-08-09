@@ -59,23 +59,23 @@ export default function Tokenomics() {
 
   {
     title: "Ecosystem",
-    lock: "10% unlocked at launch",
+    lock: "50% unlocked at launch",
     release:
-      "Remaining 90% released gradually for 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
+      "Remaining 50% released gradually for 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
   },
 
   {
     title: "Treasury",
-    lock: "10% unlocked at launch",
+    lock: "locked at launch",
     release:
-      "Remaining 90% reserved for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
+      "Reserved for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
   },
 
   {
     title: "Marketing",
-    lock: "10% unlocked at launch",
+    lock: "100% Unlocked at launch",
     release:
-      "Remaining 90% released gradually to support awareness campaigns, partnerships, content creation, and community growth.",
+      "Will be released gradually to support awareness campaigns, partnerships, content creation, and community growth.",
   },
 
   {

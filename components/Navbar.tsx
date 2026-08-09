@@ -2,12 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-
+import { NVGAI_RAYDIUM_REFERRAL_URL } from "@/config/token";
 
 export default function Navbar() {
-
   const [open, setOpen] = useState(false);
-
 
   const links = [
     {
@@ -36,10 +34,7 @@ export default function Navbar() {
     },
   ];
 
-
-
   return (
-
     <nav
       className="
       fixed
@@ -52,8 +47,6 @@ export default function Navbar() {
       backdrop-blur-md
       "
     >
-
-
       <div
         className="
         mx-auto
@@ -65,11 +58,7 @@ export default function Navbar() {
         py-4
         "
       >
-
-
-
         {/* Logo */}
-
 
         <a
           href="#home"
@@ -79,27 +68,18 @@ export default function Navbar() {
           gap-3
           "
         >
-
           <Image
-
             src="/nova-logo.png"
-
             alt="NovaGaia Logo"
-
             width={72}
-
             height={72}
-
             style={{
               width: "72px",
               height: "72px",
               objectFit: "contain",
             }}
-
             priority
-
           />
-
 
           <div
             className="
@@ -107,31 +87,18 @@ export default function Navbar() {
             font-extrabold
             "
           >
-
             <span className="text-emerald-400">
               NovaGaia
             </span>
-
 
             <span className="text-white">
               {" "}
               NVGAI
             </span>
-
-
           </div>
-
-
         </a>
 
-
-
-
-
-
-
         {/* Desktop Navigation */}
-
 
         <div
           className="
@@ -141,43 +108,26 @@ export default function Navbar() {
           md:flex
           "
         >
-
-
-
-          {links.map((link)=>(
-
+          {links.map((link) => (
             <a
-
               key={link.name}
-
               href={link.href}
-
               className="
               text-gray-300
               transition
               hover:text-emerald-400
               "
-
             >
-
               {link.name}
-
             </a>
-
           ))}
-
-
-
-
-
 
           {/* Buy Button */}
 
-
           <a
-
-            href="#buy"
-
+            href={NVGAI_RAYDIUM_REFERRAL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="
             rounded-xl
             bg-emerald-400
@@ -188,67 +138,30 @@ export default function Navbar() {
             transition
             hover:bg-emerald-300
             "
-
           >
-
-            🚀 Launching Soon
-
+            🚀 Buy / Trade NVGAI
           </a>
-
-
-
-
-
         </div>
-
-
-
-
-
-
-
 
         {/* Mobile Menu Button */}
 
-
         <button
-
           onClick={() => setOpen(!open)}
-
           aria-label="Toggle menu"
-
           className="
           text-3xl
           text-emerald-400
           md:hidden
           "
-
         >
-
           ☰
-
         </button>
-
-
-
       </div>
-
-
-
-
-
-
-
-
 
       {/* Mobile Menu */}
 
-
-
       {open && (
-
         <div
-
           className="
           flex
           flex-col
@@ -260,51 +173,29 @@ export default function Navbar() {
           py-6
           md:hidden
           "
-
         >
-
-
-
-
-          {links.map((link)=>(
-
+          {links.map((link) => (
             <a
-
               key={link.name}
-
               href={link.href}
-
               onClick={() => setOpen(false)}
-
               className="
               text-gray-300
               transition
               hover:text-emerald-400
               "
-
             >
-
               {link.name}
-
             </a>
-
           ))}
-
-
-
-
-
-
 
           {/* Mobile Buy Button */}
 
-
           <a
-
-            href="#buy"
-
+            href={NVGAI_RAYDIUM_REFERRAL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => setOpen(false)}
-
             className="
             rounded-xl
             bg-emerald-400
@@ -313,26 +204,14 @@ export default function Navbar() {
             text-center
             font-bold
             text-black
+            transition
+            hover:bg-emerald-300
             "
-
           >
-
-            🚀 Launching Soon
-
+            🚀 Buy / Trade NVGAI
           </a>
-
-
-
-
         </div>
-
-
       )}
-
-
-
     </nav>
-
   );
-
 }
