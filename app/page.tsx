@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import LaunchCountdown from "@/components/LaunchCountdown";
 import About from "@/components/About";
 import Tokenomics from "@/components/Tokenomics";
 import Roadmap from "@/components/Roadmap";
@@ -31,9 +30,6 @@ export default function Home() {
       {/* NovaGaia Introduction */}
       <Hero />
 
-
-      {/* Launch Countdown */}
-      <LaunchCountdown />
 
 
       {/* Vision & Mission */}
