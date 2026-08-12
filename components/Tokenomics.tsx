@@ -136,7 +136,7 @@ export default function Tokenomics() {
 
           <InfoCard
             title="Decimals"
-            value="9"
+            value="6"
           />
 
           <InfoCard
