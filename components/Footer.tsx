@@ -187,7 +187,7 @@ export default function Footer() {
             >
 
 
-              <SocialIcon href="https://x.com/Earthpulsemain">
+              <SocialIcon href="https://x.com/NovaGaia_NVGAI">
                 <FaXTwitter />
               </SocialIcon>
 
@@ -211,7 +211,18 @@ export default function Footer() {
                 <FaTiktok />
               </SocialIcon>
 
-
+            <a
+              href="mailto:novagaiaofficial@gmail.com"
+              className="
+              mt-5
+              inline-block
+              text-gray-300
+              transition
+              hover:text-emerald-400
+              "
+            >
+              novagaiaofficial@gmail.com
+            </a>
             </div>
 
 
