@@ -207,7 +207,7 @@ export default function Footer() {
               </SocialIcon>
 
 
-              <SocialIcon href="#">
+              <SocialIcon href="https://www.tiktok.com/@novagaia_nvgai">
                 <FaTiktok />
               </SocialIcon>
 
