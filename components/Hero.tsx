@@ -123,7 +123,7 @@ export default function Hero() {
             {/* WHITEPAPER */}
 
             <a
-              href="/NovaGaia-Whitepaper-v1.3.pdf"
+              href="/NovaGaia-Whitepaper-v1.4.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="
