@@ -2,8 +2,8 @@ export default function Tokenomics() {
   const allocations = [
     {
       name: "Public Launch & Liquidity",
-      percentage: "60%",
-      amount: "600,000,000 NVGAI",
+      percentage: "75%",
+      amount: "750,000,000 NVGAI",
       color: "bg-cyan-500",
       purpose:
         "Supports fair public distribution, decentralized exchange liquidity, trading accessibility, and launch stability.",
@@ -11,8 +11,8 @@ export default function Tokenomics() {
 
     {
       name: "Ecosystem",
-      percentage: "20%",
-      amount: "200,000,000 NVGAI",
+      percentage: "10%",
+      amount: "100,000,000 NVGAI",
       color: "bg-green-500",
       purpose:
         "Supports community rewards, AI & blockchain education, innovation initiatives, ecosystem expansion, and future utilities.",
@@ -36,14 +36,6 @@ export default function Tokenomics() {
         "Supports content creation, partnerships, educational campaigns, brand awareness, and community growth.",
     },
 
-    {
-      name: "Team",
-      percentage: "5%",
-      amount: "50,000,000 NVGAI",
-      color: "bg-purple-500",
-      purpose:
-        "Reserved for the long-term development and maintenance of the NovaGaia ecosystem with a transparent vesting schedule.",
-    },
   ];
 
   const vesting = [
@@ -56,31 +48,25 @@ export default function Tokenomics() {
 
     {
       title: "Ecosystem",
-      lock: "50% unlocked at launch",
+      lock: "100% locked at launch",
       release:
-        "Remaining 50% released gradually over 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
+        "Will be released gradually over 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
     },
 
     {
-      title: "Treasury",
+      title: "Treasury & Team",
       lock: "100% locked at launch",
       release:
-        "Reserved for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
+        "Will be released gradually over 24 months for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
     },
 
     {
       title: "Marketing",
-      lock: "100% unlocked at launch",
+      lock: "100% locked at launch",
       release:
-        "Available at launch to support awareness campaigns, partnerships, content creation, and community growth.",
+        "Will be released gradually over 24 months to support awareness campaigns, partnerships, content creation, and community growth.",
     },
 
-    {
-      title: "Team",
-      lock: "Locked at launch",
-      release:
-        "Gradually vested over 24 months to demonstrate the team's long-term commitment to the NovaGaia ecosystem.",
-    },
   ];
 
   return (
@@ -288,6 +274,279 @@ export default function Tokenomics() {
 
           ))}
 
+        </div>
+        {/* Wallet Transparency */}
+
+        <h3
+          className="
+          mt-20
+          text-3xl
+          font-bold
+          "
+        >
+          Wallet Transparency
+        </h3>
+
+        <p className="mt-4 max-w-3xl text-gray-400">
+          NovaGaia publishes its allocation wallets to provide transparency
+          and allow the community to independently verify token holdings
+          and movements on the Solana blockchain.
+        </p>
+
+        <div
+          className="
+          mt-8
+          grid
+          gap-6
+          md:grid-cols-2
+          "
+        >
+
+          {/* Treasury Wallet */}
+
+          <div
+            className="
+            rounded-xl
+            border
+            border-yellow-500/20
+            bg-black/40
+            p-6
+            "
+          >
+
+            <h4
+              className="
+              text-xl
+              font-bold
+              text-yellow-400
+              "
+            >
+              🏦 Treasury Wallet
+            </h4>
+
+            <p className="mt-2 text-sm text-gray-400">
+              Allocation: 100,000,000 NVGAI (10%)
+            </p>
+
+            <div
+              className="
+              mt-4
+              rounded-lg
+              bg-black/60
+              p-4
+              "
+            >
+              <p className="text-xs text-gray-500">
+                Solana Wallet Address
+              </p>
+
+              <p
+                className="
+                mt-2
+                break-all
+                font-mono
+                text-sm
+                text-gray-300
+                "
+              >
+                5qdcCaSD55fGxpE5CqcNZfFVVuYr5VgXkAZTApr3QtxA
+              </p>
+            </div>
+
+            <a
+              href="https://solscan.io/account/5qdcCaSD55fGxpE5CqcNZfFVVuYr5VgXkAZTApr3QtxA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+              mt-4
+              inline-block
+              text-sm
+              font-semibold
+              text-emerald-400
+              hover:text-emerald-300
+              "
+            >
+              View on Solscan ↗
+            </a>
+
+          </div>
+
+
+          {/* Ecosystem Wallet */}
+
+          <div
+            className="
+            rounded-xl
+            border
+            border-green-500/20
+            bg-black/40
+            p-6
+            "
+          >
+
+            <h4
+              className="
+              text-xl
+              font-bold
+              text-green-400
+              "
+            >
+              🌱 Ecosystem Wallet
+            </h4>
+
+            <p className="mt-2 text-sm text-gray-400">
+              Allocation: 100,000,000 NVGAI (10%)
+            </p>
+
+            <div
+              className="
+              mt-4
+              rounded-lg
+              bg-black/60
+              p-4
+              "
+            >
+              <p className="text-xs text-gray-500">
+                Solana Wallet Address
+              </p>
+
+              <p
+                className="
+                mt-2
+                break-all
+                font-mono
+                text-sm
+                text-gray-300
+                "
+              >
+                4xPDbfewZsnjLimQZa1aRu3em7x7YP6hHeyCjpATMYM5
+              </p>
+            </div>
+
+            <p className="mt-4 text-sm text-gray-500">
+              Solscan verification will be available once the complete
+              wallet address is published.
+            </p>
+
+          </div>
+
+          {/* Marketing Wallet */}
+
+          <div
+            className="
+            rounded-xl
+            border
+            border-green-500/20
+            bg-black/40
+            p-6
+            "
+          >
+
+            <h4
+              className="
+              text-xl
+              font-bold
+              text-green-400
+              "
+            >
+              📣 Marketing Wallet
+            </h4>
+
+            <p className="mt-2 text-sm text-gray-400">
+              Allocation: 50,000,000 NVGAI (5%)
+            </p>
+
+            <div
+              className="
+              mt-4
+              rounded-lg
+              bg-black/60
+              p-4
+              "
+            >
+              <p className="text-xs text-gray-500">
+                Solana Wallet Address
+              </p>
+
+              <p
+                className="
+                mt-2
+                break-all
+                font-mono
+                text-sm
+                text-gray-300
+                "
+              >
+                GiEeNQo4Zp8NB6b6kjqUz3sZNQfsv9pfrbFj25FnLtcq
+              </p>
+            </div>
+
+            <p className="mt-4 text-sm text-gray-500">
+              Solscan verification will be available once the complete
+              wallet address is published.
+            </p>
+
+          </div>
+          {/* Developer Initial Investment Wallet */}
+
+          <div
+            className="
+            rounded-xl
+            border
+            border-green-500/20
+            bg-black/40
+            p-6
+            "
+          >
+
+            <h4
+              className="
+              text-xl
+              font-bold
+              text-green-400
+              "
+            >
+              👨‍💻 Dev. Investment Wallet
+            </h4>
+
+            <p className="mt-2 text-sm text-gray-400">
+              Allocation: 200,000,000 NVGAI (20%)
+            </p>
+
+            <div
+              className="
+              mt-4
+              rounded-lg
+              bg-black/60
+              p-4
+              "
+            >
+              <p className="text-xs text-gray-500">
+                Solana Wallet Address
+              </p>
+
+              <p
+                className="
+                mt-2
+                break-all
+                font-mono
+                text-sm
+                text-gray-300
+                "
+              >
+                9ivhQCgsGMXb4h3P9YkewYvwTc7QemKRYH1A1JqMAy7b
+                
+              </p>
+            </div>
+
+            <p className="mt-4 text-sm text-gray-500">
+              Due to launching errors, this will be used as initial fund and will be returned
+              once Treasury allocation is released.
+              Solscan verification will be available once the complete
+              wallet address is published.
+            </p>
+
+          </div>
         </div>
 
         {/* Philosophy */}
