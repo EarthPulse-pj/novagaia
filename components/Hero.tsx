@@ -8,6 +8,12 @@ import {
   NVGAI_EXPLORER_URL,
 } from "@/config/token";
 
+const NOVAPX1_TOKEN_ADDRESS =
+  "5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump";
+
+const NOVAPX1_EXPLORER_URL =
+  "https://explorer.solana.com/address/5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump";
+
 export default function Hero() {
   return (
     <section
@@ -161,7 +167,9 @@ export default function Hero() {
             </a>
           </div>
 
+          {/* ============================= */}
           {/* NVGAI TOKEN SECTION */}
+          {/* ============================= */}
 
           <div className="mt-8 max-w-xl">
             {/* TOKEN ADDRESS LABEL */}
@@ -264,6 +272,145 @@ export default function Hero() {
             <p className="mt-3 text-xs leading-5 text-gray-500">
               Trading link includes NovaGaia's official Raydium referral
               attribution.
+            </p>
+          </div>
+
+          {/* ====================================== */}
+          {/* NOVAPX1 CONTRACT SECTION */}
+          {/* ====================================== */}
+
+          <div
+            className="
+              mt-8
+              max-w-xl
+              rounded-2xl
+              border
+              border-emerald-500/30
+              bg-gradient-to-br
+              from-emerald-950/40
+              via-black/50
+              to-cyan-950/40
+              p-5
+            "
+          >
+            {/* NOVAPX1 TITLE */}
+
+            <div className="mb-4 flex items-center gap-3">
+              <div
+                className="
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-emerald-400/40
+                  bg-emerald-500/10
+                  text-xl
+                "
+              >
+                🛡️
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                  NovaGaia Guardian
+                </p>
+
+                <h3 className="text-xl font-bold text-white">
+                  NOVAPX1
+                </h3>
+              </div>
+            </div>
+
+            {/* NOVAPX1 DESCRIPTION */}
+
+            <p className="mb-4 text-sm leading-6 text-gray-400">
+              NOVAPX1 is a community meme token inspired by the
+              NovaGaia universe and created to represent the spirit,
+              energy, and growing community behind NovaGaia.
+            </p>
+
+            {/* NOVAPX1 ADDRESS LABEL */}
+
+            <p className="mb-2 text-sm font-semibold text-emerald-300">
+              🛡️ NOVAPX1 Contract Address
+            </p>
+
+            {/* NOVAPX1 ADDRESS + COPY */}
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div
+                className="
+                  flex-1
+                  rounded-xl
+                  border
+                  border-emerald-400/30
+                  bg-black/50
+                  px-4
+                  py-3
+                "
+              >
+                <p className="break-all font-mono text-sm text-gray-300">
+                  {NOVAPX1_TOKEN_ADDRESS}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    NOVAPX1_TOKEN_ADDRESS
+                  );
+                }}
+                className="
+                  rounded-xl
+                  border
+                  border-emerald-400
+                  px-5
+                  py-3
+                  font-semibold
+                  text-emerald-300
+                  transition
+                  hover:bg-emerald-900/40
+                "
+              >
+                📋 Copy
+              </button>
+            </div>
+
+            {/* NOVAPX1 EXPLORER BUTTON */}
+
+            <div className="mt-4">
+              <a
+                href={NOVAPX1_EXPLORER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                  block
+                  rounded-xl
+                  border
+                  border-emerald-400/40
+                  bg-emerald-500/10
+                  px-6
+                  py-3
+                  text-center
+                  text-sm
+                  font-semibold
+                  text-emerald-300
+                  transition
+                  hover:bg-emerald-500/20
+                "
+              >
+                🔎 View NOVAPX1 Contract
+              </a>
+            </div>
+
+            {/* DISCLAIMER */}
+
+            <p className="mt-4 text-center text-xs text-gray-500">
+              NOVAPX1 is separate from the main NVGAI token.
             </p>
           </div>
 

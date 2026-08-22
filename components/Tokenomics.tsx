@@ -8,7 +8,6 @@ export default function Tokenomics() {
       purpose:
         "Supports fair public distribution, decentralized exchange liquidity, trading accessibility, and launch stability.",
     },
-
     {
       name: "Ecosystem",
       percentage: "10%",
@@ -17,7 +16,6 @@ export default function Tokenomics() {
       purpose:
         "Supports community rewards, AI & blockchain education, innovation initiatives, ecosystem expansion, and future utilities.",
     },
-
     {
       name: "Treasury",
       percentage: "10%",
@@ -26,7 +24,6 @@ export default function Tokenomics() {
       purpose:
         "Reserved for strategic partnerships, ecosystem expansion, emergency funding, and community-approved initiatives.",
     },
-
     {
       name: "Marketing",
       percentage: "5%",
@@ -35,7 +32,6 @@ export default function Tokenomics() {
       purpose:
         "Supports content creation, partnerships, educational campaigns, brand awareness, and community growth.",
     },
-
   ];
 
   const vesting = [
@@ -45,48 +41,46 @@ export default function Tokenomics() {
       release:
         "Supports fair public trading, decentralized liquidity, and healthy market price discovery.",
     },
-
     {
       title: "Ecosystem",
       lock: "100% locked at launch",
       release:
         "Will be released gradually over 24 months through community rewards, educational programs, innovation initiatives, and ecosystem development.",
     },
-
     {
-      title: "Treasury & Team",
+      title: "Treasury",
       lock: "100% locked at launch",
       release:
         "Will be released gradually over 24 months for strategic partnerships, ecosystem expansion, emergency funding, and future opportunities.",
     },
-
     {
       title: "Marketing",
       lock: "100% locked at launch",
       release:
         "Will be released gradually over 24 months to support awareness campaigns, partnerships, content creation, and community growth.",
     },
-
   ];
 
   return (
     <section
       id="tokenomics"
       className="
-      bg-black/40
-      px-6
-      py-24
-      text-white
+        bg-black/40
+        px-6
+        py-24
+        text-white
       "
     >
       <div className="mx-auto max-w-6xl">
 
+        {/* Header */}
+
         <h2
           className="
-          text-center
-          text-5xl
-          font-bold
-          text-emerald-400
+            text-center
+            text-5xl
+            font-bold
+            text-emerald-400
           "
         >
           NovaGaia Tokenomics
@@ -94,11 +88,11 @@ export default function Tokenomics() {
 
         <p
           className="
-          mx-auto
-          mt-6
-          max-w-3xl
-          text-center
-          text-gray-300
+            mx-auto
+            mt-6
+            max-w-3xl
+            text-center
+            text-gray-300
           "
         >
           NVGAI is designed to support long-term ecosystem growth,
@@ -109,10 +103,10 @@ export default function Tokenomics() {
 
         <div
           className="
-          mt-12
-          grid
-          gap-6
-          md:grid-cols-3
+            mt-12
+            grid
+            gap-6
+            md:grid-cols-3
           "
         >
           <InfoCard
@@ -131,11 +125,13 @@ export default function Tokenomics() {
           />
         </div>
 
+        {/* Token Allocation */}
+
         <h3
           className="
-          mt-16
-          text-3xl
-          font-bold
+            mt-16
+            text-3xl
+            font-bold
           "
         >
           Token Allocation
@@ -144,58 +140,54 @@ export default function Tokenomics() {
         <div className="mt-8 space-y-6">
 
           {allocations.map((item) => (
-
             <div
               key={item.name}
               className="
-              rounded-xl
-              bg-white/5
-              p-5
+                rounded-xl
+                bg-white/5
+                p-5
               "
             >
-
               <div
                 className="
-                flex
-                justify-between
+                  flex
+                  justify-between
                 "
               >
-
                 <h4 className="font-bold">
                   {item.name}
                 </h4>
 
                 <span
                   className="
-                  font-bold
-                  text-emerald-400
+                    font-bold
+                    text-emerald-400
                   "
                 >
                   {item.percentage}
                 </span>
-
               </div>
+
+              {/* Progress Bar */}
 
               <div
                 className="
-                mt-3
-                h-3
-                rounded-full
-                bg-gray-800
-                "
-              >
-
-                <div
-                  className={`
+                  mt-3
                   h-3
                   rounded-full
-                  ${item.color}
+                  bg-gray-800
+                "
+              >
+                <div
+                  className={`
+                    h-3
+                    rounded-full
+                    ${item.color}
                   `}
                   style={{
                     width: item.percentage,
                   }}
                 />
-
               </div>
 
               <p className="mt-3 text-gray-300">
@@ -205,20 +197,18 @@ export default function Tokenomics() {
               <p className="text-sm text-gray-400">
                 {item.purpose}
               </p>
-
             </div>
-
           ))}
 
         </div>
 
-        {/* Vesting */}
+        {/* Vesting & Transparency */}
 
         <h3
           className="
-          mt-20
-          text-3xl
-          font-bold
+            mt-20
+            text-3xl
+            font-bold
           "
         >
           Vesting & Transparency
@@ -227,36 +217,34 @@ export default function Tokenomics() {
         <p className="mt-4 max-w-3xl text-gray-400">
           Token allocations are structured to support long-term ecosystem
           development, responsible treasury management, and transparent
-          team commitment. Applicable vesting schedules extend over 24 months.
+          project operations. Applicable vesting schedules extend over
+          24 months.
         </p>
 
         <div
           className="
-          mt-8
-          grid
-          gap-6
-          md:grid-cols-2
+            mt-8
+            grid
+            gap-6
+            md:grid-cols-2
           "
         >
-
           {vesting.map((item) => (
-
             <div
               key={item.title}
               className="
-              rounded-xl
-              border
-              border-emerald-500/20
-              bg-black/40
-              p-6
+                rounded-xl
+                border
+                border-emerald-500/20
+                bg-black/40
+                p-6
               "
             >
-
               <h4
                 className="
-                text-xl
-                font-bold
-                text-emerald-400
+                  text-xl
+                  font-bold
+                  text-emerald-400
                 "
               >
                 {item.title}
@@ -269,19 +257,17 @@ export default function Tokenomics() {
               <p className="text-gray-300">
                 📅 {item.release}
               </p>
-
             </div>
-
           ))}
-
         </div>
+
         {/* Wallet Transparency */}
 
         <h3
           className="
-          mt-20
-          text-3xl
-          font-bold
+            mt-20
+            text-3xl
+            font-bold
           "
         >
           Wallet Transparency
@@ -295,10 +281,10 @@ export default function Tokenomics() {
 
         <div
           className="
-          mt-8
-          grid
-          gap-6
-          md:grid-cols-2
+            mt-8
+            grid
+            gap-6
+            md:grid-cols-2
           "
         >
 
@@ -306,19 +292,18 @@ export default function Tokenomics() {
 
           <div
             className="
-            rounded-xl
-            border
-            border-yellow-500/20
-            bg-black/40
-            p-6
+              rounded-xl
+              border
+              border-yellow-500/20
+              bg-black/40
+              p-6
             "
           >
-
             <h4
               className="
-              text-xl
-              font-bold
-              text-yellow-400
+                text-xl
+                font-bold
+                text-yellow-400
               "
             >
               🏦 Treasury Wallet
@@ -330,10 +315,10 @@ export default function Tokenomics() {
 
             <div
               className="
-              mt-4
-              rounded-lg
-              bg-black/60
-              p-4
+                mt-4
+                rounded-lg
+                bg-black/60
+                p-4
               "
             >
               <p className="text-xs text-gray-500">
@@ -342,11 +327,11 @@ export default function Tokenomics() {
 
               <p
                 className="
-                mt-2
-                break-all
-                font-mono
-                text-sm
-                text-gray-300
+                  mt-2
+                  break-all
+                  font-mono
+                  text-sm
+                  text-gray-300
                 "
               >
                 5qdcCaSD55fGxpE5CqcNZfFVVuYr5VgXkAZTApr3QtxA
@@ -358,37 +343,34 @@ export default function Tokenomics() {
               target="_blank"
               rel="noopener noreferrer"
               className="
-              mt-4
-              inline-block
-              text-sm
-              font-semibold
-              text-emerald-400
-              hover:text-emerald-300
+                mt-4
+                inline-block
+                text-sm
+                font-semibold
+                text-emerald-400
+                hover:text-emerald-300
               "
             >
               View on Solscan ↗
             </a>
-
           </div>
-
 
           {/* Ecosystem Wallet */}
 
           <div
             className="
-            rounded-xl
-            border
-            border-green-500/20
-            bg-black/40
-            p-6
+              rounded-xl
+              border
+              border-green-500/20
+              bg-black/40
+              p-6
             "
           >
-
             <h4
               className="
-              text-xl
-              font-bold
-              text-green-400
+                text-xl
+                font-bold
+                text-green-400
               "
             >
               🌱 Ecosystem Wallet
@@ -400,10 +382,10 @@ export default function Tokenomics() {
 
             <div
               className="
-              mt-4
-              rounded-lg
-              bg-black/60
-              p-4
+                mt-4
+                rounded-lg
+                bg-black/60
+                p-4
               "
             >
               <p className="text-xs text-gray-500">
@@ -412,41 +394,50 @@ export default function Tokenomics() {
 
               <p
                 className="
-                mt-2
-                break-all
-                font-mono
-                text-sm
-                text-gray-300
+                  mt-2
+                  break-all
+                  font-mono
+                  text-sm
+                  text-gray-300
                 "
               >
                 4xPDbfewZsnjLimQZa1aRu3em7x7YP6hHeyCjpATMYM5
               </p>
             </div>
 
-            <p className="mt-4 text-sm text-gray-500">
-              Solscan verification will be available once the complete
-              wallet address is published.
-            </p>
-
+            <a
+              href="https://solscan.io/account/4xPDbfewZsnjLimQZa1aRu3em7x7YP6hHeyCjpATMYM5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                mt-4
+                inline-block
+                text-sm
+                font-semibold
+                text-emerald-400
+                hover:text-emerald-300
+              "
+            >
+              View on Solscan ↗
+            </a>
           </div>
 
           {/* Marketing Wallet */}
 
           <div
             className="
-            rounded-xl
-            border
-            border-green-500/20
-            bg-black/40
-            p-6
+              rounded-xl
+              border
+              border-pink-500/20
+              bg-black/40
+              p-6
             "
           >
-
             <h4
               className="
-              text-xl
-              font-bold
-              text-green-400
+                text-xl
+                font-bold
+                text-pink-400
               "
             >
               📣 Marketing Wallet
@@ -458,10 +449,10 @@ export default function Tokenomics() {
 
             <div
               className="
-              mt-4
-              rounded-lg
-              bg-black/60
-              p-4
+                mt-4
+                rounded-lg
+                bg-black/60
+                p-4
               "
             >
               <p className="text-xs text-gray-500">
@@ -470,55 +461,65 @@ export default function Tokenomics() {
 
               <p
                 className="
-                mt-2
-                break-all
-                font-mono
-                text-sm
-                text-gray-300
+                  mt-2
+                  break-all
+                  font-mono
+                  text-sm
+                  text-gray-300
                 "
               >
                 GiEeNQo4Zp8NB6b6kjqUz3sZNQfsv9pfrbFj25FnLtcq
               </p>
             </div>
 
-            <p className="mt-4 text-sm text-gray-500">
-              Solscan verification will be available once the complete
-              wallet address is published.
-            </p>
-
+            <a
+              href="https://solscan.io/account/GiEeNQo4Zp8NB6b6kjqUz3sZNQfsv9pfrbFj25FnLtcq"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                mt-4
+                inline-block
+                text-sm
+                font-semibold
+                text-emerald-400
+                hover:text-emerald-300
+              "
+            >
+              View on Solscan ↗
+            </a>
           </div>
+
           {/* Developer Initial Investment Wallet */}
 
           <div
             className="
-            rounded-xl
-            border
-            border-green-500/20
-            bg-black/40
-            p-6
+              rounded-xl
+              border
+              border-cyan-500/20
+              bg-black/40
+              p-6
             "
           >
-
             <h4
               className="
-              text-xl
-              font-bold
-              text-green-400
+                text-xl
+                font-bold
+                text-cyan-400
               "
             >
               👨‍💻 Dev. Investment Wallet
             </h4>
 
             <p className="mt-2 text-sm text-gray-400">
-              Allocation: 200,000,000 NVGAI (20%)
+              200,000,000 NVGAI — part of the Public Launch & Liquidity allocation
             </p>
 
             <div
               className="
-              mt-4
-              rounded-lg
-              bg-black/60
-              p-4
+                mt-4
+                rounded-lg
+                bg-black/60
+                p-4
               "
             >
               <p className="text-xs text-gray-500">
@@ -527,46 +528,60 @@ export default function Tokenomics() {
 
               <p
                 className="
-                mt-2
-                break-all
-                font-mono
-                text-sm
-                text-gray-300
+                  mt-2
+                  break-all
+                  font-mono
+                  text-sm
+                  text-gray-300
                 "
               >
                 9ivhQCgsGMXb4h3P9YkewYvwTc7QemKRYH1A1JqMAy7b
-                
               </p>
             </div>
 
             <p className="mt-4 text-sm text-gray-500">
-              Due to launching errors, this will be used as initial fund and will be returned
-              once Treasury allocation is released.
-              Solscan verification will be available once the complete
-              wallet address is published.
+              Due to initial launch funding requirements, this wallet is
+              designated for project launch support. The 200,000,000 NVGAI
+              shown here is part of the existing 750,000,000 NVGAI Public
+              Launch & Liquidity allocation and is not an additional token
+              allocation.
             </p>
 
+            <a
+              href="https://solscan.io/account/9ivhQCgsGMXb4h3P9YkewYvwTc7QemKRYH1A1JqMAy7b"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                mt-4
+                inline-block
+                text-sm
+                font-semibold
+                text-emerald-400
+                hover:text-emerald-300
+              "
+            >
+              View on Solscan ↗
+            </a>
           </div>
         </div>
 
-        {/* Philosophy */}
+        {/* Tokenomics Philosophy */}
 
         <div
           className="
-          mt-20
-          rounded-2xl
-          border
-          border-cyan-500/30
-          bg-black/60
-          p-8
+            mt-20
+            rounded-2xl
+            border
+            border-cyan-500/30
+            bg-black/60
+            p-8
           "
         >
-
           <h3
             className="
-            text-3xl
-            font-bold
-            text-cyan-400
+              text-3xl
+              font-bold
+              text-cyan-400
             "
           >
             Tokenomics Philosophy
@@ -577,7 +592,6 @@ export default function Tokenomics() {
             and long-term ecosystem growth through responsible token
             management.
           </p>
-
         </div>
 
       </div>
@@ -595,30 +609,28 @@ function InfoCard({
   return (
     <div
       className="
-      rounded-xl
-      border
-      border-emerald-800
-      bg-black/40
-      p-6
-      text-center
+        rounded-xl
+        border
+        border-emerald-800
+        bg-black/40
+        p-6
+        text-center
       "
     >
-
       <h4 className="text-gray-400">
         {title}
       </h4>
 
       <p
         className="
-        mt-2
-        text-2xl
-        font-bold
-        text-emerald-400
+          mt-2
+          text-2xl
+          font-bold
+          text-emerald-400
         "
       >
         {value}
       </p>
-
     </div>
   );
 }
