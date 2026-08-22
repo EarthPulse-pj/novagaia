@@ -262,7 +262,7 @@ export default function Hero() {
 
             <Image
 
-              src="/nova-mascot.png"
+              src="/NovaPX1.png"
 
               alt="NovaGaia AI Mascot"
 

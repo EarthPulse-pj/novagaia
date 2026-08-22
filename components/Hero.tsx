@@ -462,7 +462,7 @@ export default function Hero() {
           "
         >
           <Image
-            src="/nova-mascot.png"
+            src="/NovaPX1.png"
             alt="NovaGaia Nova Mascot"
             width={700}
             height={700}
