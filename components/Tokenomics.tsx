@@ -1,4 +1,10 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Tokenomics() {
+  const [novaPX1Copied, setNovaPX1Copied] = useState(false);
+  
   const allocations = [
     {
       name: "Public Launch & Liquidity",
@@ -123,6 +129,200 @@ export default function Tokenomics() {
             title="Maximum Supply"
             value="1B NVGAI"
           />
+        </div>
+
+                {/* NVGAI Contract */}
+
+        <div
+          id="nvgai"
+          className="
+            mt-10
+            rounded-2xl
+            border
+            border-emerald-500/20
+            bg-black/40
+            p-6
+          "
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-emerald-400">
+                NVGAI Token
+              </h3>
+
+              <p className="mt-2 text-sm text-gray-400">
+                Solana Contract Address
+              </p>
+
+              <p
+                className="
+                  mt-2
+                  break-all
+                  font-mono
+                  text-sm
+                  text-gray-300
+                "
+              >
+                7gTRGxdbJdyefr3YU8mnrUJxAqjxQfeZ7UjCiYQoWray
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      "5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump"
+                    );
+
+                    setNovaPX1Copied(true);
+
+                    setTimeout(() => {
+                      setNovaPX1Copied(false);
+                    }, 2000);
+                  } catch (error) {
+                    console.error("Failed to copy NovaPX1 contract address:", error);
+                  }
+                }}
+                className="
+                  rounded-lg
+                  border
+                  border-cyan-500/30
+                  bg-cyan-500/10
+                  px-4
+                  py-2
+                  text-sm
+                  font-semibold
+                  text-cyan-300
+                  transition
+                  hover:bg-cyan-500/20
+                "
+              >
+                {novaPX1Copied ? "Copied" : "Copy Address"}
+              </button>
+
+              <a
+                href="https://raydium.io/launchpad/token/?mint=7gTRGxdbJdyefr3YU8mnrUJxAqjxQfeZ7UjCiYQoWray&lreferrer=5GfR4xFdjafe5yKzY3xAeaPFt2z6yzquhVAN1HkvSgbh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                  rounded-lg
+                  bg-emerald-500
+                  px-4
+                  py-2
+                  text-sm
+                  font-bold
+                  text-black
+                  transition
+                  hover:bg-emerald-400
+                "
+              >
+                Buy NVGAI ↗
+              </a>
+            </div>
+          </div>
+        </div>
+
+                {/* NovaPX1 Guardian */}
+
+        <div
+          id="novapx1"
+          className="
+            mt-10
+            rounded-2xl
+            border
+            border-cyan-500/20
+            bg-black/40
+            p-6
+          "
+        >
+          <div>
+            <h3
+              className="
+                text-2xl
+                font-bold
+                text-cyan-400
+              "
+            >
+              NovaPX1 Guardian
+            </h3>
+
+            <p className="mt-3 max-w-3xl text-gray-300">
+              NovaPX1 is the Guardian of the NovaGaia ecosystem, designed to
+              represent protection, awareness, and community-driven intelligence.
+              It supports the NovaGaia vision by connecting AI, blockchain
+              technology, and community participation.
+            </p>
+
+            <p className="mt-3 max-w-3xl text-sm text-gray-400">
+              NovaPX1 operates alongside NVGAI as part of the broader NovaGaia
+              ecosystem.
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-gray-400">
+              Solana Contract Address
+            </p>
+
+            <p
+              className="
+                mt-2
+                break-all
+                font-mono
+                text-sm
+                text-gray-300
+              "
+            >
+              5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  "5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump"
+                )
+              }
+              className="
+                rounded-lg
+                border
+                border-cyan-500/30
+                bg-cyan-500/10
+                px-4
+                py-2
+                text-sm
+                font-semibold
+                text-cyan-300
+                transition
+                hover:bg-cyan-500/20
+              "
+            >
+              Copy Address
+            </button>
+
+            <a
+              href="https://pump.fun/coin/5PEyzvHSLGJgHFm8kheKfZRiMpwV2mbkAts8X73ipump"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                rounded-lg
+                bg-cyan-500
+                px-4
+                py-2
+                text-sm
+                font-bold
+                text-black
+                transition
+                hover:bg-cyan-400
+              "
+            >
+              Buy NovaPX1 ↗
+            </a>
+          </div>
         </div>
 
         {/* Token Allocation */}
