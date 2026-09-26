@@ -363,24 +363,11 @@ export default function About() {
             p-8
           "
         >
-          {/* NOVAPX1 MASCOT */}
-
-          <div className="flex justify-center">
-            <img
-              src="/NovaPX1.png"
-              alt="NovaPX1 Guardian mascot"
-              className="
-                h-64
-                w-auto
-                object-contain
-                drop-shadow-[0_0_25px_rgba(16,185,129,0.25)]
-              "
-            />
-          </div>
+          <div className="text-center text-4xl">🛡</div>
 
           <h3
             className="
-              mt-6
+              mt-4
               text-center
               text-2xl
               font-bold
