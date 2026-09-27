@@ -10,6 +10,7 @@ const links = [
   { name: "Community", href: "#community" },
   { name: "NovaPX1", href: "#novapx1" },
   { name: "NVGAI", href: "#nvgai" },
+  { name: "🛡️ Operation Blacklist", href: "#operation-blacklist" },
   { name: "Q&A", href: "#qa" },
 ];
 

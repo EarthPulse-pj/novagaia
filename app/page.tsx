@@ -4,6 +4,7 @@ import About from "@/components/About";
 import Intelligence from "@/components/Intelligence";
 import Learn from "@/components/Learn";
 import ReportThreat from "@/components/ReportThreat";
+import OperationBlacklist from "@/components/OperationBlacklist";
 import QA from "@/components/QA";
 import Tokenomics from "@/components/Tokenomics";
 import Roadmap from "@/components/Roadmap";
@@ -66,6 +67,9 @@ export default function Home() {
 
       {/* Report a Threat */}
       <ReportThreat />
+
+      {/* Operation Blacklist */}
+      <OperationBlacklist />
 
       {/* Q&A */}
       <QA />
