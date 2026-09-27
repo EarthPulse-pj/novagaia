@@ -101,7 +101,7 @@ export default function OperationBlacklist() {
           </div>
 
           <h2 className="text-4xl font-bold tracking-tight text-white md:text-5xl">
-            We don't blacklist people.
+            We don't blacklist people or token.
             <span className="block bg-gradient-to-r from-emerald-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
               We document evidence.
             </span>
