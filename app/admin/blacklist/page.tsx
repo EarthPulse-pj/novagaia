@@ -534,9 +534,45 @@ const [promoterAssessmentMessage, setPromoterAssessmentMessage] =
 
   const [investigationMessage,
     setInvestigationMessage] = useState("");
+
   const [savingAssessment, setSavingAssessment] = useState(false);
   const [assessmentMessage, setAssessmentMessage] = useState("");
   const [loadingAssessment, setLoadingAssessment] = useState(false);
+
+  const [responseAssessment, setResponseAssessment] =
+    useState<{
+      response_type: string;
+      response_details: string;
+      investigator_notes: string;
+    } | null>(null);
+
+  const [loadingResponse, setLoadingResponse] = useState(false);
+  const [savingResponse, setSavingResponse] = useState(false);
+  const [responseMessage, setResponseMessage] = useState("");
+
+    const [clearanceAssessment, setClearanceAssessment] =
+    useState<{
+      clearance_decision: string;
+      clearance_reason: string;
+      investigator_notes: string;
+    } | null>(null);
+
+  const [loadingClearance, setLoadingClearance] = useState(false);
+  const [savingClearance, setSavingClearance] = useState(false);
+  const [clearanceMessage, setClearanceMessage] = useState("");
+
+  const [updateAssessment, setUpdateAssessment] =
+    useState<{
+      update_type: string;
+      update_details: string;
+      investigator_notes: string;
+    } | null>(null);
+
+  const [savingUpdate, setSavingUpdate] = useState(false);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
+
+  const [updateMessage, setUpdateMessage] = useState("");
+  
   const selectedCase = cases.find(
     (item) => item.id === selectedCaseId
   );
@@ -553,6 +589,516 @@ const [promoterAssessmentMessage, setPromoterAssessmentMessage] =
     2
   )
 );
+  const loadResponseAssessment = async (caseId: string) => {
+    if (!caseId) {
+      setResponseAssessment(null);
+      return;
+    }
+
+    setLoadingResponse(true);
+    setResponseMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/blacklist/response?case_id=${encodeURIComponent(caseId)}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to load Response record."
+        );
+      }
+
+      if (!data.response) {
+        setResponseAssessment(null);
+        setResponseMessage(
+          "No saved Response record for this case."
+        );
+        return;
+      }
+
+      setResponseAssessment({
+        response_type:
+          typeof data.response.response_type === "string"
+            ? data.response.response_type
+            : "",
+
+        response_details:
+          typeof data.response.response_details === "string"
+            ? data.response.response_details
+            : "",
+
+        investigator_notes:
+          typeof data.response.investigator_notes === "string"
+            ? data.response.investigator_notes
+            : "",
+      });
+
+      setResponseMessage(
+        "Saved Response record loaded."
+      );
+    } catch (error) {
+      console.error(
+        "Response record load error:",
+        error
+      );
+
+      setResponseAssessment(null);
+
+      setResponseMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load Response record."
+      );
+    } finally {
+      setLoadingResponse(false);
+    }
+  };
+
+  const saveResponseAssessment = async () => {
+    if (!selectedCaseId) {
+      setResponseMessage("No case is selected.");
+      return;
+    }
+
+    if (!responseAssessment?.response_type.trim()) {
+      setResponseMessage(
+        "Please select a Response Type before saving."
+      );
+      return;
+    }
+
+    setSavingResponse(true);
+    setResponseMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/blacklist/response",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            case_id: selectedCaseId,
+            response_type:
+              responseAssessment.response_type,
+            response_details:
+              responseAssessment.response_details,
+            investigator_notes:
+              responseAssessment.investigator_notes,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to save Response record."
+        );
+      }
+
+      setResponseAssessment({
+        response_type:
+          typeof data.response?.response_type === "string"
+            ? data.response.response_type
+            : responseAssessment.response_type,
+
+        response_details:
+          typeof data.response?.response_details === "string"
+            ? data.response.response_details
+            : responseAssessment.response_details,
+
+        investigator_notes:
+          typeof data.response?.investigator_notes === "string"
+            ? data.response.investigator_notes
+            : responseAssessment.investigator_notes,
+      });
+
+      setResponseMessage(
+        "Response record saved successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Response record save error:",
+        error
+      );
+
+      setResponseMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to save Response record."
+      );
+    } finally {
+      setSavingResponse(false);
+    }
+  };
+
+  const loadUpdateAssessment = async (caseId: string) => {
+    if (!caseId) {
+      setUpdateAssessment(null);
+      return;
+    }
+
+    setLoadingUpdate(true);
+    setUpdateMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/blacklist/update?case_id=${encodeURIComponent(caseId)}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to load Update record."
+        );
+      }
+
+      if (!data.update) {
+        setUpdateAssessment({
+          update_type: "",
+          update_details: "",
+          investigator_notes: "",
+        });
+        setUpdateMessage(
+          "No saved Update record for this case."
+        );
+        return;
+      }
+
+      setUpdateAssessment({
+        update_type:
+          typeof data.update.update_type === "string"
+            ? data.update.update_type
+            : "",
+        update_details:
+          typeof data.update.update_details === "string"
+            ? data.update.update_details
+            : "",
+        investigator_notes:
+          typeof data.update.investigator_notes === "string"
+            ? data.update.investigator_notes
+            : "",
+      });
+
+      setUpdateMessage("Saved Update record loaded.");
+    } catch (error) {
+      console.error(
+        "Blacklist update load error:",
+        error
+      );
+
+      setUpdateAssessment({
+        update_type: "",
+        update_details: "",
+        investigator_notes: "",
+      });
+
+      setUpdateMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load Update record."
+      );
+    } finally {
+      setLoadingUpdate(false);
+    }
+  };
+    const saveUpdateAssessment = async () => {
+    if (!selectedCaseId) {
+      setUpdateMessage("No case is selected.");
+      return;
+    }
+
+    if (!updateAssessment?.update_type.trim()) {
+      setUpdateMessage(
+        "Please select an Update Type before saving."
+      );
+      return;
+    }
+
+    setSavingUpdate(true);
+    setUpdateMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/blacklist/update",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            case_id: selectedCaseId,
+            update_type:
+              updateAssessment.update_type,
+            update_details:
+              updateAssessment.update_details,
+            investigator_notes:
+              updateAssessment.investigator_notes,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to save Update record."
+        );
+      }
+
+      setUpdateAssessment({
+        update_type:
+          typeof data.update?.update_type === "string"
+            ? data.update.update_type
+            : updateAssessment.update_type,
+
+        update_details:
+          typeof data.update?.update_details === "string"
+            ? data.update.update_details
+            : updateAssessment.update_details,
+
+        investigator_notes:
+          typeof data.update?.investigator_notes === "string"
+            ? data.update.investigator_notes
+            : updateAssessment.investigator_notes,
+      });
+
+      setUpdateMessage(
+        "Update record saved successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Update record save error:",
+        error
+      );
+
+      setUpdateMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to save Update record."
+      );
+    } finally {
+      setSavingUpdate(false);
+    }
+  };
+
+  const loadClearanceAssessment = async (caseId: string) => {
+    if (!caseId) {
+      setClearanceAssessment(null);
+      return;
+    }
+
+    setLoadingClearance(true);
+    setClearanceMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/blacklist/clearance?case_id=${encodeURIComponent(caseId)}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to load Clearance record."
+        );
+      }
+
+      if (!data.clearance) {
+        setClearanceAssessment(null);
+        setClearanceMessage(
+          "No saved Clearance record for this case."
+        );
+        return;
+      }
+
+      setClearanceAssessment({
+        clearance_decision:
+          typeof data.clearance.clearance_decision === "string"
+            ? data.clearance.clearance_decision
+            : "",
+        clearance_reason:
+          typeof data.clearance.clearance_reason === "string"
+            ? data.clearance.clearance_reason
+            : "",
+        investigator_notes:
+          typeof data.clearance.investigator_notes === "string"
+            ? data.clearance.investigator_notes
+            : "",
+      });
+
+      setClearanceMessage("Saved Clearance record loaded.");
+    } catch (error) {
+      console.error(
+        "Blacklist clearance load error:",
+        error
+      );
+
+      setClearanceAssessment(null);
+      setClearanceMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load Clearance record."
+      );
+    } finally {
+      setLoadingClearance(false);
+    }
+  };
+
+  const saveClearanceAssessment = async () => {
+    console.log("SAVE CLEARANCE CLICKED:", {
+      selectedCaseId,
+      clearanceAssessment,
+    });
+    if (!selectedCaseId) {
+      setClearanceMessage("No case is selected.");
+      return;
+    }
+
+    if (!clearanceAssessment?.clearance_decision.trim()) {
+      setClearanceMessage(
+        "Please select a Clearance Decision before saving."
+      );
+      return;
+    }
+
+    setSavingClearance(true);
+    setClearanceMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/blacklist/clearance",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            case_id: selectedCaseId,
+            clearance_decision:
+              clearanceAssessment.clearance_decision,
+            clearance_reason:
+              clearanceAssessment.clearance_reason,
+            investigator_notes:
+              clearanceAssessment.investigator_notes,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to save Clearance record."
+        );
+      }
+
+      if (data.clearance) {
+        setClearanceAssessment({
+          clearance_decision:
+            typeof data.clearance.clearance_decision === "string"
+              ? data.clearance.clearance_decision
+              : "",
+          clearance_reason:
+            typeof data.clearance.clearance_reason === "string"
+              ? data.clearance.clearance_reason
+              : "",
+          investigator_notes:
+            typeof data.clearance.investigator_notes === "string"
+              ? data.clearance.investigator_notes
+              : "",
+        });
+      }
+
+      setClearanceMessage(
+        "Clearance record saved successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Blacklist clearance save error:",
+        error
+      );
+
+      setClearanceMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to save Clearance record."
+      );
+    } finally {
+      setSavingClearance(false);
+    }
+  };
+
+    const clearCase = async () => {
+      if (!selectedCaseId) {
+        setClearanceMessage("No case is selected.");
+        return;
+      }
+
+      if (!clearanceAssessment?.clearance_decision) {
+        setClearanceMessage(
+          "Please save a Clearance decision before clearing this case."
+        );
+        return;
+      }
+
+      try {
+        setClearanceMessage("Clearing case...");
+
+        const response = await fetch("/api/cases", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            case_id: selectedCaseId,
+            status: "cleared",
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.error || "Unable to clear the case."
+          );
+        }
+
+        setCases((currentCases) =>
+          currentCases.map((item) =>
+            item.id === selectedCaseId
+              ? {
+                  ...item,
+                  status: "cleared",
+                  stage: "clear",
+                }
+              : item
+          )
+        );
+
+        setClearanceMessage(
+          "Case cleared successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Blacklist case clearance error:",
+          error
+        );
+
+        setClearanceMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to clear the case."
+        );
+      }
+    };
+
     const loadTriageAssessment = async (caseId: string) => {
     if (!caseId) {
       setTriageAssessment(null);
@@ -738,9 +1284,100 @@ const [promoterAssessmentMessage, setPromoterAssessmentMessage] =
     } finally {
       setLoadingInvestigation(false);
     }
-  };
+    };
 
-  const saveTriageAssessment = async () => {
+    const saveInvestigationAssessment = async () => {
+      if (!selectedCaseId) {
+        setInvestigationMessage("No case selected.");
+        return;
+      }
+
+      if (!investigationAssessment) {
+        setInvestigationMessage(
+          "No Investigation assessment data to save."
+        );
+        return;
+      }
+
+      setLoadingInvestigation(true);
+      setInvestigationMessage("");
+
+      try {
+        const response = await fetch(
+          "/api/blacklist/investigation",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              case_id: selectedCaseId,
+
+              subject_identity_confirmed:
+                investigationAssessment.subject_identity_confirmed,
+
+              subject_background_reviewed:
+                investigationAssessment.subject_background_reviewed,
+
+              project_history_reviewed:
+                investigationAssessment.project_history_reviewed,
+
+              team_activity_reviewed:
+                investigationAssessment.team_activity_reviewed,
+
+              contract_reviewed:
+                investigationAssessment.contract_reviewed,
+
+              tokenomics_reviewed:
+                investigationAssessment.tokenomics_reviewed,
+
+              liquidity_reviewed:
+                investigationAssessment.liquidity_reviewed,
+
+              on_chain_activity_reviewed:
+                investigationAssessment.on_chain_activity_reviewed,
+
+              preliminary_findings:
+                investigationAssessment.preliminary_findings,
+
+              investigator_notes:
+                investigationAssessment.investigator_notes,
+
+              investigation_decision:
+                investigationAssessment.investigation_decision,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.error ||
+              "Unable to save Investigation assessment."
+          );
+        }
+
+        setInvestigationMessage(
+          "Investigation assessment saved successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Investigation assessment save error:",
+          error
+        );
+
+        setInvestigationMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to save Investigation assessment."
+        );
+      } finally {
+        setLoadingInvestigation(false);
+      }
+    };
+
+    const saveTriageAssessment = async () => {
     if (!selectedCaseId) {
       setTriageMessage("No case selected.");
       return;
@@ -857,6 +1494,37 @@ useEffect(() => {
 
   loadInvestigationAssessment(selectedCaseId);
 }, [selectedCaseId]);
+
+  useEffect(() => {
+    if (!selectedCaseId) {
+      setResponseAssessment(null);
+      setResponseMessage("");
+      return;
+    }
+
+    loadResponseAssessment(selectedCaseId);
+  }, [selectedCaseId]);
+
+
+  useEffect(() => {
+    if (!selectedCaseId) {
+      setUpdateAssessment(null);
+      setUpdateMessage("");
+      return;
+    }
+
+    loadUpdateAssessment(selectedCaseId);
+  }, [selectedCaseId]);
+
+    useEffect(() => {
+    if (!selectedCaseId) {
+      setClearanceAssessment(null);
+      setClearanceMessage("");
+      return;
+    }
+
+    loadClearanceAssessment(selectedCaseId);
+  }, [selectedCaseId]);
 
   useEffect(() => {
   loadThreatReports();
@@ -1591,7 +2259,7 @@ const allowedTransitions: Record<
   report: ["triage"],
   triage: ["investigate"],
   investigate: ["risk", "review"],
-  risk: ["review"],
+  risk: ["review", "investigate"],
   review: ["publish", "investigate"],
   publish: ["response", "clear"],
   response: ["update"],
@@ -1620,7 +2288,7 @@ if (!isAllowedTransition) {
 
   const nextStatus =
   stage === "clear"
-    ? "cleared"
+    ? "update"
     : stage === "update"
       ? "update"
       : stage === "response"
@@ -1654,7 +2322,7 @@ if (!isAllowedTransition) {
       stage,
       status:
         stage === "clear"
-          ? "cleared"
+          ? "update"
           : stage === "publish"
             ? "published"
             : stage === "review"
@@ -1702,12 +2370,17 @@ if (!isAllowedTransition) {
       setActiveTab("review");
     } else if (stage === "publish") {
       setActiveTab("publish");
+    } else if (stage === "response") {
+      setActiveTab("response");
+    } else if (stage === "update") {
+      setActiveTab("update");
+    } else if (stage === "clear") {
+      setActiveTab("clear");
     } else if (stage === "triage") {
       setActiveTab("triage");
-    } else if (
-      stage === "investigate" ||
-      stage === "report"
-    ) {
+    } else if (stage === "investigate") {
+      setActiveTab("investigate");
+    } else if (stage === "report") {
       setActiveTab("cases");
     }
 
@@ -3531,10 +4204,16 @@ if (!isAllowedTransition) {
                     <div className="mt-5 flex flex-wrap gap-3">
                       <button
                         type="button"
-                        disabled
-                        className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={saveInvestigationAssessment}
+                        disabled={
+                          loadingInvestigation ||
+                          !investigationAssessment
+                        }
+                        className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        💾 Save Investigation
+                        {loadingInvestigation
+                          ? "💾 Saving Investigation..."
+                          : "💾 Save Investigation"}
                       </button>
 
                       <button
@@ -3703,7 +4382,7 @@ if (!isAllowedTransition) {
                       type="button"
                       onClick={() => {
                         setReviewConfirmed(false);
-                        moveCaseToStage("investigate");
+                        setActiveTab("investigate");
                       }}
                       className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm font-semibold text-amber-300 transition hover:border-amber-400/60 hover:bg-amber-500/10 hover:text-amber-200"
                     >
@@ -4041,7 +4720,14 @@ if (!isAllowedTransition) {
                         </label>
 
                         <select
-                          defaultValue=""
+                          value={responseAssessment?.response_type ?? ""}
+                          onChange={(event) =>
+                            setResponseAssessment((current) => ({
+                              response_type: event.target.value,
+                              response_details: current?.response_details ?? "",
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
                           className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
                         >
                           <option value="" disabled>
@@ -4077,7 +4763,14 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={responseAssessment?.response_details ?? ""}
+                          onChange={(event) =>
+                            setResponseAssessment((current) => ({
+                              response_type: current?.response_type ?? "",
+                              response_details: event.target.value,
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
                           rows={6}
                           placeholder="Document the response, communication, action taken, or outcome..."
                           className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
@@ -4090,7 +4783,14 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={responseAssessment?.investigator_notes ?? ""}
+                          onChange={(event) =>
+                            setResponseAssessment((current) => ({
+                              response_type: current?.response_type ?? "",
+                              response_details: current?.response_details ?? "",
+                              investigator_notes: event.target.value,
+                            }))
+                          }
                           rows={4}
                           placeholder="Add internal notes about the response..."
                           className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
@@ -4099,19 +4799,34 @@ if (!isAllowedTransition) {
                     </div>
                   </div>
 
+                  {responseMessage && (
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-300">
+                      {responseMessage}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-3 border-t border-slate-800 pt-5">
                     <button
                       type="button"
-                      disabled
-                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed"
+                      onClick={saveResponseAssessment}
+                      disabled={
+                        savingResponse ||
+                        loadingResponse ||
+                        !selectedCaseId ||
+                        !responseAssessment?.response_type
+                      }
+                      className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold
+                    text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      💾 Save Response
+                      {savingResponse
+                        ? "💾 Saving..."
+                        : "💾 Save Response"}
                     </button>
 
                     <button
                       type="button"
-                      disabled
-                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed"
+                      onClick={() => moveCaseToStage("update")}
+                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                     >
                       🔄 Continue to Update
                     </button>
@@ -4195,8 +4910,16 @@ if (!isAllowedTransition) {
                         </label>
 
                         <select
-                          defaultValue=""
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
+                          value={updateAssessment?.update_type ?? ""}
+                          onChange={(event) =>
+                            setUpdateAssessment((current) => ({
+                              update_type: event.target.value,
+                              update_details: current?.update_details ?? "",
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
+                          disabled={savingUpdate}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <option value="" disabled>
                             Select update type
@@ -4228,10 +4951,18 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={updateAssessment?.update_details ?? ""}
+                          onChange={(event) =>
+                            setUpdateAssessment((current) => ({
+                              update_type: current?.update_type ?? "",
+                              update_details: event.target.value,
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
                           rows={6}
                           placeholder="Describe the new information, development, evidence, or change..."
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
+                          disabled={savingUpdate}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                       </div>
 
@@ -4241,10 +4972,18 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={updateAssessment?.investigator_notes ?? ""}
+                          onChange={(event) =>
+                            setUpdateAssessment((current) => ({
+                              update_type: current?.update_type ?? "",
+                              update_details: current?.update_details ?? "",
+                              investigator_notes: event.target.value,
+                            }))
+                          }
                           rows={4}
                           placeholder="Add internal notes about this update..."
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
+                          disabled={savingUpdate}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -4253,16 +4992,21 @@ if (!isAllowedTransition) {
                   <div className="flex flex-wrap gap-3 border-t border-slate-800 pt-5">
                     <button
                       type="button"
-                      disabled
-                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed"
+                      onClick={saveUpdateAssessment}
+                      disabled={
+                        savingUpdate ||
+                        !selectedCaseId ||
+                        !updateAssessment?.update_type
+                      }
+                      className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       💾 Save Update
                     </button>
 
                     <button
                       type="button"
-                      disabled
-                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed"
+                      onClick={() => moveCaseToStage("clear")}
+                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                     >
                       ✓ Continue to Clear
                     </button>
@@ -4345,8 +5089,16 @@ if (!isAllowedTransition) {
                         </label>
 
                         <select
-                          defaultValue=""
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500"
+                          value={clearanceAssessment?.clearance_decision ?? ""}
+                          onChange={(event) =>
+                            setClearanceAssessment((current) => ({
+                              clearance_decision: event.target.value,
+                              clearance_reason: current?.clearance_reason ?? "",
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
+                          disabled={loadingClearance || savingClearance}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <option value="" disabled>
                             Select clearance decision
@@ -4375,10 +5127,18 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={clearanceAssessment?.clearance_reason ?? ""}
+                          onChange={(event) =>
+                            setClearanceAssessment((current) => ({
+                              clearance_decision: current?.clearance_decision ?? "",
+                              clearance_reason: event.target.value,
+                              investigator_notes: current?.investigator_notes ?? "",
+                            }))
+                          }
                           rows={6}
                           placeholder="Explain why this case is being cleared and provide the supporting reasoning..."
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
+                          disabled={loadingClearance || savingClearance}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                       </div>
 
@@ -4388,10 +5148,18 @@ if (!isAllowedTransition) {
                         </label>
 
                         <textarea
-                          defaultValue=""
+                          value={clearanceAssessment?.investigator_notes ?? ""}
+                          onChange={(event) =>
+                            setClearanceAssessment((current) => ({
+                              clearance_decision: current?.clearance_decision ?? "",
+                              clearance_reason: current?.clearance_reason ?? "",
+                              investigator_notes: event.target.value,
+                            }))
+                          }
                           rows={4}
                           placeholder="Add final internal notes about the case resolution..."
-                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500"
+                          disabled={loadingClearance || savingClearance}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -4400,11 +5168,25 @@ if (!isAllowedTransition) {
                   <div className="flex flex-wrap gap-3 border-t border-slate-800 pt-5">
                     <button
                       type="button"
-                      disabled
-                      className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed"
+                      onClick={saveClearanceAssessment}
+                      disabled={
+                        savingClearance ||
+                        loadingClearance ||
+                        !selectedCaseId ||
+                        !clearanceAssessment?.clearance_decision
+                      }
+                      className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      💾 Save Clearance
+                      {savingClearance
+                        ? "💾 Saving..."
+                        : "💾 Save Clearance"}
                     </button>
+
+                    {clearanceMessage && (
+                      <div className="mt-4 w-full rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-400">
+                        {clearanceMessage}
+                      </div>
+                    )}
 
                     <button
                       type="button"
@@ -4943,9 +5725,9 @@ if (!isAllowedTransition) {
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <button
                           type="button"
-                          onClick={() =>
-                            moveCaseToStage("investigate")
-                          }
+                          onClick={() => {
+                            setActiveTab("investigate");
+                          }}
                           disabled={
                             savingAssessment ||
                             savingPromoterAssessment
@@ -5008,3 +5790,8 @@ if (!isAllowedTransition) {
   </main>
   );
 }
+
+
+
+
+
