@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       const { data, error } = await supabaseAdmin
         .from("threat_reports")
         .select(
-          "id, created_at, report_number, threat_type, project, evidence, description, contact, status"
+          "id, created_at, report_number, threat_type, project, contract_address, evidence, description, contact, status"
         )
         .eq("id", blacklistCase.report_id)
         .maybeSingle();
@@ -161,6 +161,58 @@ export async function GET(request: Request) {
      * 5. Load Publication Checklist
      * ------------------------------------------------------------
      */
+    /*
+     * ------------------------------------------------------------
+     * 5. Load Saved Update
+     * ------------------------------------------------------------
+     */
+    const { data: updateRecord, error: updateError } =
+      await supabaseAdmin
+        .from("blacklist_updates")
+        .select("*")
+        .eq("case_id", caseId)
+        .maybeSingle();
+
+    if (updateError) {
+      console.error("Blacklist report update retrieval error:", updateError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to retrieve update record.",
+        },
+        { status: 500 }
+      );
+    }
+
+    /*
+     * ------------------------------------------------------------
+     * 6. Load Latest Promoter Assessment
+     * ------------------------------------------------------------
+     */
+    const {
+      data: promoterAssessment,
+      error: promoterAssessmentError,
+    } = await supabaseAdmin
+      .from("blacklist_promoter_assessments")
+      .select("*")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (promoterAssessmentError) {
+      console.error(
+        "Blacklist report promoter assessment retrieval error:",
+        promoterAssessmentError
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to retrieve promoter assessment.",
+        },
+        { status: 500 }
+      );
+    }
     const publicationChecklist =
       blacklistCase.publication_checklist ?? null;
 
@@ -337,6 +389,7 @@ export async function GET(request: Request) {
           id: blacklistCase.id,
           case_number: blacklistCase.case_number,
           project: blacklistCase.subject,
+          contract_address: threatReport?.contract_address ?? null,
           category: blacklistCase.category,
           status,
           publication_status:
@@ -351,6 +404,7 @@ export async function GET(request: Request) {
               created_at: threatReport.created_at,
               threat_type: threatReport.threat_type,
               project: threatReport.project,
+              contract_address: threatReport.contract_address ?? null,
               evidence: threatReport.evidence,
               description: threatReport.description,
               status: threatReport.status,
@@ -413,10 +467,38 @@ export async function GET(request: Request) {
           : null,
 
         /*
-         * Update is intentionally not included because the current
-         * Update stage is local UI state and has no persisted record.
+         * Saved Update and Promoter Assessment data are included.
+         * Internal investigator notes remain excluded from this report.
          */
-        update: null,
+        promoter_assessment: promoterAssessment
+          ? {
+              promotion_history: promoterAssessment.promotion_history ?? null,
+              project_due_diligence: promoterAssessment.project_due_diligence ?? null,
+              misleading_claims: promoterAssessment.misleading_claims ?? null,
+              transparency_disclosure: promoterAssessment.transparency_disclosure ?? null,
+              promotion_pattern: promoterAssessment.promotion_pattern ?? null,
+              financial_incentives: promoterAssessment.financial_incentives ?? null,
+              community_conduct: promoterAssessment.community_conduct ?? null,
+              promoter_risk_score: promoterAssessment.promoter_risk_score ?? null,
+              promoter_risk_band: promoterAssessment.promoter_risk_band ?? null,
+              evidence_strength: promoterAssessment.evidence_strength ?? null,
+              evidence_confidence_score: promoterAssessment.evidence_confidence_score ?? null,
+              evidence_confidence_level: promoterAssessment.evidence_confidence_level ?? null,
+              verification_checklist: promoterAssessment.verification_checklist ?? null,
+              assessed_at: promoterAssessment.assessed_at ?? null,
+              created_at: promoterAssessment.created_at ?? null,
+              updated_at: promoterAssessment.updated_at ?? null,
+            }
+          : null,
+
+        update: updateRecord
+          ? {
+              update_type: updateRecord.update_type ?? null,
+              update_details: updateRecord.update_details ?? null,
+              created_at: updateRecord.created_at ?? null,
+              updated_at: updateRecord.updated_at ?? null,
+            }
+          : null,
       },
     });
   } catch (error) {

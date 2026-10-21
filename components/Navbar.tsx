@@ -11,6 +11,7 @@ const links = [
   { name: "NovaPX1", href: "#novapx1" },
   { name: "NVGAI", href: "#nvgai" },
   { name: "🛡️ Operation Blacklist", href: "#operation-blacklist" },
+  { name: "Case Overview", href: "/case-overview" },
   { name: "Q&A", href: "#qa" },
 ];
 

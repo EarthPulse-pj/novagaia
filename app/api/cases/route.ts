@@ -58,6 +58,7 @@ export async function GET() {
         description: string;
         evidence: string | null;
         contact: string | null;
+        contract_address: string | null;
       }
     > = {};
 
@@ -68,7 +69,7 @@ export async function GET() {
       } = await supabaseAdmin
         .from("threat_reports")
         .select(
-          "id, description, evidence, contact"
+          "id, description, evidence, contact, contract_address"
         )
         .in("id", reportIds);
 
@@ -95,6 +96,7 @@ export async function GET() {
             description: report.description,
             evidence: report.evidence,
             contact: report.contact,
+            contract_address: report.contract_address ?? null,
           },
         ])
       );
@@ -110,6 +112,7 @@ export async function GET() {
         description: report?.description ?? "",
         evidence: report?.evidence ?? null,
         contact: report?.contact ?? null,
+        contract_address: report?.contract_address ?? null,
       };
     });
 
@@ -302,7 +305,34 @@ export async function PATCH(request: Request) {
     const caseId = body.case_id;
     const status = body.status;
     const publicationChecklist = body.publication_checklist;
-    if (!caseId || !status) {
+    if (status === "published") {
+      const requiredPublicationChecks = [
+        "caseReview",
+        "evidenceReviewed",
+        "riskAssessmentReviewed",
+        "publicDisclosureReady",
+      ];
+
+      const checklistIsComplete =
+        publicationChecklist !== null &&
+        typeof publicationChecklist === "object" &&
+        !Array.isArray(publicationChecklist) &&
+        requiredPublicationChecks.every(
+          (key) => publicationChecklist[key] === true
+        );
+
+      if (!checklistIsComplete) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Publication blocked: all four publication checklist items must be checked.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+    if (!caseId || (status === undefined && publicationChecklist === undefined)) {
       return NextResponse.json(
         {
           success: false,
@@ -323,7 +353,7 @@ export async function PATCH(request: Request) {
       "cleared",
     ];
 
-    if (!allowedStatuses.includes(status)) {
+    if (status !== undefined && !allowedStatuses.includes(status)) {
       return NextResponse.json(
         {
           success: false,
@@ -337,7 +367,7 @@ export async function PATCH(request: Request) {
       await supabaseAdmin
         .from("blacklist_cases")
         .update({
-          status,
+          ...(status !== undefined ? { status } : {}),
           ...(publicationChecklist !== undefined
             ? { publication_checklist: publicationChecklist }
             : {}),

@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       evidence_confidence_level,
 
       assessment_notes,
+      verification_checklist,
     } = body;
 
     if (!case_id) {
@@ -54,36 +55,71 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabaseAdmin
+const assessmentPayload = {
+  case_id,
+
+  promotion_history,
+  project_due_diligence,
+  misleading_claims,
+  transparency_disclosure,
+  promotion_pattern,
+  financial_incentives,
+  community_conduct,
+
+  promoter_risk_score,
+  promoter_risk_band: promoter_risk_band?.toLowerCase(),
+
+  evidence_strength,
+  evidence_confidence_score,
+  evidence_confidence_level:
+    evidence_confidence_level?.toLowerCase(),
+
+  assessment_notes,
+
+  ...(verification_checklist !== undefined
+    ? { verification_checklist }
+    : {}),
+
+  assessed_by: userData.user.id,
+  assessed_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+const { data: existingAssessment, error: lookupError } =
+  await supabaseAdmin
+    .from("blacklist_promoter_assessments")
+    .select("id")
+    .eq("case_id", case_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+if (lookupError) {
+  console.error(
+    "Promoter assessment lookup error:",
+    lookupError
+  );
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to check existing promoter assessment.",
+      details: lookupError.message,
+    },
+    { status: 500 }
+  );
+}
+
+const { data, error } = existingAssessment
+  ? await supabaseAdmin
       .from("blacklist_promoter_assessments")
-      .insert({
-        case_id,
-
-        // Promoter Risk — 85 points
-        promotion_history,
-        project_due_diligence,
-        misleading_claims,
-        transparency_disclosure,
-        promotion_pattern,
-        financial_incentives,
-        community_conduct,
-
-        promoter_risk_score,
-        promoter_risk_band:
-          promoter_risk_band?.toLowerCase(),
-
-        // Evidence Confidence — 15 points
-        evidence_strength,
-        evidence_confidence_score,
-        evidence_confidence_level:
-          evidence_confidence_level?.toLowerCase(),
-
-        assessment_notes,
-
-        // Existing authentication tracking
-        assessed_by: userData.user.id,
-        assessed_at: new Date().toISOString(),
-      })
+      .update(assessmentPayload)
+      .eq("id", existingAssessment.id)
+      .select()
+      .single()
+  : await supabaseAdmin
+      .from("blacklist_promoter_assessments")
+      .insert(assessmentPayload)
       .select()
       .single();
 

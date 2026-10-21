@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { jsPDF } from "jspdf";
 
 type WorkflowStage =
   | "report"
@@ -27,6 +28,7 @@ type ThreatReport = {
   report_number: number;
   threat_type: string;
   project: string;
+  contract_address: string | null;
   evidence: string | null;
   description: string;
   contact: string | null;
@@ -48,11 +50,18 @@ type BlacklistCase = {
   description: string;
   reportId?: string;
   reportNumber?: number;
+  contractAddress?: string | null;
   publicationChecklist?: {
     caseReview: boolean;
     evidenceReviewed: boolean;
     riskAssessmentReviewed: boolean;
     publicDisclosureReady: boolean;
+    reviewChecklist?: {
+      investigationFindingsReviewed: boolean;
+      riskAssessmentReviewed: boolean;
+      evidenceReviewed: boolean;
+      readyForPublication: boolean;
+    };
   };
 };
 
@@ -121,67 +130,160 @@ const riskCategories: RiskCategory[] = [
     description:
       "Mint authority, freeze authority, upgradeability, ownership controls, suspicious permissions, or other contract and token-level risks.",
     max: 20,
-    scoringGuide:
-      "0–4: No significant control concerns identified. 5–9: Minor or limited concerns. 10–14: Multiple significant control risks. 15–20: Severe or highly concerning contract/token controls.",
+    scoringGuide: [
+      "0-4: No significant control concerns identified.",
+      "5-9: Minor or limited concerns.",
+      "10-14: Multiple significant control risks.",
+      "15-20: Severe or highly concerning contract/token controls.",
+    ].join(" "),
   },
   {
     name: "Holder Distribution",
     description:
       "Concentration of token holdings, insider allocations, whale exposure, wallet clustering, or other distribution-related risks.",
     max: 15,
-    scoringGuide:
-      "0–3: Broad and relatively healthy distribution. 4–6: Some concentration concerns. 7–10: Significant concentration or insider exposure. 11–15: Extreme concentration or highly concerning holder patterns.",
+    scoringGuide: [
+      "0-3: Healthy or well-distributed holder structure.",
+      "4-6: Some concentration concerns.",
+      "7-10: Significant holder concentration.",
+      "11-15: Extreme concentration or major holder-dump risk.",
+    ].join(" "),
   },
   {
     name: "Liquidity & Exit Risk",
     description:
       "Liquidity depth, liquidity concentration, withdrawal or removal risk, trading conditions, and potential barriers to exiting positions.",
     max: 15,
-    scoringGuide:
-      "0–3: Strong liquidity conditions with limited identified concerns. 4–6: Some liquidity limitations. 7–10: Significant liquidity or exit concerns. 11–15: Severe liquidity weakness or substantial exit risk.",
+    scoringGuide: [
+      "0-3: Healthy liquidity with low exit risk.",
+      "4-6: Some liquidity limitations or concerns.",
+      "7-10: Significant liquidity or withdrawal risks.",
+      "11-15: Severe liquidity risk or potential inability to exit.",
+    ].join(" "),
   },
   {
     name: "Team & Transparency",
     description:
       "Team identity and verifiability, project disclosures, documentation, token allocations, development activity, and consistency of public information.",
     max: 10,
-    scoringGuide:
-      "0–2: Strongly verifiable and transparent. 3–4: Minor transparency gaps. 5–7: Significant verification or disclosure concerns. 8–10: Severe lack of transparency or unverifiable claims.",
+    scoringGuide: [
+      "0-2: Strong team transparency and accountability.",
+      "3-4: Minor transparency gaps.",
+      "5-7: Significant identity or accountability concerns.",
+      "8-10: Severe opacity or serious team-related concerns.",
+    ].join(" "),
   },
   {
     name: "Website & Infrastructure",
     description:
       "Website authenticity, domain and infrastructure security, technical reliability, linked services, impersonation risks, and suspicious infrastructure.",
     max: 10,
-    scoringGuide:
-      "0–2: No significant infrastructure concerns. 3–4: Minor technical or authenticity concerns. 5–7: Significant infrastructure or authenticity risks. 8–10: Severe or highly suspicious infrastructure indicators.",
+    scoringGuide: [
+      "0-2: Reliable website and infrastructure.",
+      "3-4: Minor technical or security concerns.",
+      "5-7: Significant infrastructure or credibility issues.",
+      "8-10: Severe failures, deceptive infrastructure, or major security concerns.",
+    ].join(" "),
   },
   {
     name: "Marketing & Promotion",
     description:
       "Misleading promotion, unrealistic claims, undisclosed paid promotion, aggressive marketing behavior, or other promotional risk indicators.",
     max: 10,
-    scoringGuide:
-      "0–2: Responsible and evidence-based promotion. 3–4: Some questionable promotional practices. 5–7: Significant misleading or aggressive promotion. 8–10: Severe promotional misconduct or highly misleading claims.",
+    scoringGuide: [
+      "0-2: Responsible and transparent promotion.",
+      "3-4: Some exaggerated or poorly disclosed claims.",
+      "5-7: Significant misleading promotion or undisclosed incentives.",
+      "8-10: Severe manipulation, deceptive claims, or coordinated promotion risks.",
+    ].join(" "),
   },
   {
     name: "Community Behavior",
     description:
       "Harassment, manipulation, impersonation, coordinated abuse, censorship of legitimate concerns, or other harmful community behavior.",
     max: 10,
-    scoringGuide:
-      "0–2: No significant behavioral concerns. 3–4: Minor community conduct concerns. 5–7: Significant manipulation, harassment, or abusive behavior. 8–10: Severe or coordinated harmful behavior.",
+    scoringGuide: [
+      "0-2: Healthy and constructive community behavior.",
+      "3-4: Some suspicious or disruptive behavior.",
+      "5-7: Significant manipulation, harassment, or coordinated activity.",
+      "8-10: Severe abuse, organized manipulation, or widespread deceptive behavior.",
+    ].join(" "),
   },
   {
     name: "On-Chain Behavior",
     description:
       "Suspicious wallet activity, unusual transaction patterns, fund movements, wallet relationships, contract interactions, or other verifiable on-chain behavior.",
     max: 10,
-    scoringGuide:
-      "0–2: No significant suspicious activity identified. 3–4: Minor anomalies requiring monitoring. 5–7: Significant suspicious on-chain patterns. 8–10: Severe or strongly corroborated suspicious activity.",
+    scoringGuide: [
+      "0-2: No significant suspicious on-chain activity identified.",
+      "3-4: Minor anomalies requiring further review.",
+      "5-7: Significant suspicious transactions or activity patterns.",
+      "8-10: Severe suspicious activity or strong evidence of coordinated harmful behavior.",
+    ].join(" "),
   },
 ];
 
+const riskChecklistCriteria: Record<
+  string,
+  { id: string; label: string; points: number }[]
+> = {
+  "Contract & Token Controls": [
+    { id: "mint", label: "Unrestricted mint authority confirmed", points: 4 },
+    { id: "freeze", label: "Concerning freeze authority confirmed", points: 4 },
+    { id: "upgrade", label: "Material upgrade control risk verified", points: 4 },
+    { id: "ownership", label: "Concentrated or unsafe control permissions verified", points: 4 },
+    { id: "contract", label: "Other material contract risk supported by evidence", points: 4 },
+  ],
+  "Holder Distribution": [
+    { id: "concentration", label: "High holder concentration verified", points: 3 },
+    { id: "insiders", label: "Material insider allocation concern documented", points: 3 },
+    { id: "whales", label: "Significant whale exposure verified", points: 3 },
+    { id: "clusters", label: "Related wallets or clustering supported by analysis", points: 3 },
+    { id: "distribution", label: "Other material distribution risk documented", points: 3 },
+  ],
+  "Liquidity & Exit Risk": [
+    { id: "depth", label: "Insufficient liquidity depth verified", points: 3 },
+    { id: "concentration", label: "Liquidity concentrated in a risky pool or venue", points: 3 },
+    { id: "removal", label: "Liquidity removal or withdrawal risk identified", points: 3 },
+    { id: "trading", label: "Material trading or slippage concern documented", points: 3 },
+    { id: "exit", label: "Significant exit barriers supported by evidence", points: 3 },
+  ],
+  "Team & Transparency": [
+    { id: "identity", label: "Important team identity claims remain unverified", points: 2 },
+    { id: "disclosure", label: "Material project disclosures are missing", points: 2 },
+    { id: "allocation", label: "Token allocation information is unclear or inconsistent", points: 2 },
+    { id: "development", label: "Expected development activity lacks verifiable support", points: 2 },
+    { id: "inconsistency", label: "Material public statements conflict with evidence", points: 2 },
+  ],
+  "Website & Infrastructure": [
+    { id: "authenticity", label: "Website authenticity concern verified", points: 2 },
+    { id: "domain", label: "Domain or infrastructure security concern identified", points: 2 },
+    { id: "reliability", label: "Material technical reliability issue documented", points: 2 },
+    { id: "services", label: "Linked service or integration presents a verified risk", points: 2 },
+    { id: "impersonation", label: "Impersonation or deceptive infrastructure evidence found", points: 2 },
+  ],
+  "Marketing & Promotion": [
+    { id: "claims", label: "Material promotional claims are misleading or unsupported", points: 2 },
+    { id: "paid", label: "Paid promotion appears undisclosed based on available evidence", points: 2 },
+    { id: "returns", label: "Unrealistic or guaranteed-return claims documented", points: 2 },
+    { id: "pressure", label: "Aggressive or coercive promotional tactics documented", points: 2 },
+    { id: "coordination", label: "Coordinated deceptive promotion supported by evidence", points: 2 },
+  ],
+  "Community Behavior": [
+    { id: "harassment", label: "Harassment or targeted abuse documented", points: 2 },
+    { id: "manipulation", label: "Manipulative community activity supported by evidence", points: 2 },
+    { id: "impersonation", label: "Community impersonation incident verified", points: 2 },
+    { id: "censorship", label: "Evidence of suppressing legitimate concerns documented", points: 2 },
+    { id: "coordination", label: "Coordinated harmful behavior substantiated", points: 2 },
+  ],
+  "On-Chain Behavior": [
+    { id: "wallets", label: "Suspicious wallet activity verified", points: 2 },
+    { id: "transactions", label: "Materially unusual transaction patterns documented", points: 2 },
+    { id: "funds", label: "Concerning fund movements traced with evidence", points: 2 },
+    { id: "relationships", label: "Relevant wallet relationships supported by analysis", points: 2 },
+    { id: "interactions", label: "Suspicious contract interactions substantiated", points: 2 },
+  ],
+};
 type PromoterRiskCategory = {
   name: string;
   description: string;
@@ -196,7 +298,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Documented history of promoting projects or campaigns associated with significant problems.",
     max: 15,
     scoringGuide:
-      "0–2: No concerning history identified. 3–5: One or more questionable promotions with limited evidence of serious problems. 6–8: Multiple questionable promotions or recurring concerns. 9–11: Several promotions connected to serious misconduct or substantial unresolved concerns. 12–15: Strong documented pattern involving multiple projects associated with serious misconduct.",
+      "0-2: No concerning history identified. " +
+      "3-5: One or more questionable promotions with limited evidence of serious problems. " +
+      "6-8: Multiple questionable promotions or recurring concerns. " +
+      "9-11: Several promotions connected to serious misconduct or substantial unresolved concerns. " +
+      "12-15: Strong documented pattern involving multiple projects associated with serious misconduct.",
   },
   {
     name: "Project Due Diligence",
@@ -204,7 +310,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Apparent level of verification performed before promoting a project or campaign.",
     max: 15,
     scoringGuide:
-      "0–2: Reasonable verification is documented. 3–5: Some verification but important gaps remain. 6–8: Limited due diligence with significant unchecked information. 9–11: Repeated promotion despite obvious unresolved warning signs. 12–15: Strong evidence of repeatedly disregarding substantial and readily identifiable warning indicators.",
+      "0-2: Reasonable verification is documented. " +
+      "3-5: Some verification but important gaps remain. " +
+      "6-8: Limited due diligence with significant unchecked information. " +
+      "9-11: Repeated promotion despite obvious unresolved warning signs. " +
+      "12-15: Strong evidence of repeatedly disregarding substantial and readily identifiable warning indicators.",
   },
   {
     name: "Misleading Claims",
@@ -212,7 +322,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "False, exaggerated, unverifiable, or materially misleading promotional statements.",
     max: 15,
     scoringGuide:
-      "0–2: Claims appear appropriately supported and qualified. 3–5: Minor exaggeration or weakly supported claims. 6–8: Multiple unsupported or substantially exaggerated claims. 9–11: Repeated materially misleading claims. 12–15: Strong documented pattern of materially false or deceptive promotional claims.",
+      "0-2: Claims appear appropriately supported and qualified. " +
+      "3-5: Minor exaggeration or weakly supported claims. " +
+      "6-8: Multiple unsupported or substantially exaggerated claims. " +
+      "9-11: Repeated materially misleading claims. " +
+      "12-15: Strong documented pattern of materially false or deceptive promotional claims.",
   },
   {
     name: "Transparency & Disclosure",
@@ -220,7 +334,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Disclosure of sponsorships, payments, token allocations, affiliate relationships, and other material incentives.",
     max: 10,
     scoringGuide:
-      "0–1: Relevant relationships are clearly disclosed. 2–3: Minor disclosure gaps. 4–5: Important promotional relationships are inconsistently disclosed. 6–8: Repeated failure to disclose material relationships. 9–10: Strong evidence of concealed or deceptive material relationships.",
+      "0-1: Relevant relationships are clearly disclosed. " +
+      "2-3: Minor disclosure gaps. " +
+      "4-5: Important promotional relationships are inconsistently disclosed. " +
+      "6-8: Repeated failure to disclose material relationships. " +
+      "9-10: Strong evidence of concealed or deceptive material relationships.",
   },
   {
     name: "Promotion Pattern",
@@ -228,7 +346,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Recurring patterns of promoting questionable projects or campaigns.",
     max: 10,
     scoringGuide:
-      "0–1: No concerning pattern. 2–3: Isolated questionable promotion. 4–5: Several questionable promotions with common characteristics. 6–8: Repeated promotion of projects displaying similar warning signs. 9–10: Strong recurring pattern despite repeated warning indicators or previous negative outcomes.",
+      "0-1: No concerning pattern. " +
+      "2-3: Isolated questionable promotion. " +
+      "4-5: Several questionable promotions with common characteristics. " +
+      "6-8: Repeated promotion of projects displaying similar warning signs. " +
+      "9-10: Strong recurring pattern despite repeated warning indicators or previous negative outcomes.",
   },
   {
     name: "Financial Incentives",
@@ -236,7 +358,11 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Whether financial or token incentives appear connected to promotional behavior in a concerning way.",
     max: 10,
     scoringGuide:
-      "0–1: No significant incentive concern. 2–3: Incentives exist and appear appropriately disclosed. 4–5: Significant incentives with incomplete disclosure. 6–8: Strong evidence that substantial incentives influenced promotion without adequate transparency. 9–10: Strong documented evidence of concealed or deceptive incentive arrangements.",
+      "0-1: No significant incentive concern. " +
+      "2-3: Incentives exist and appear appropriately disclosed. " +
+      "4-5: Significant incentives with incomplete disclosure. " +
+      "6-8: Strong evidence that substantial incentives influenced promotion without adequate transparency. " +
+      "9-10: Strong documented evidence of concealed or deceptive incentive arrangements.",
   },
   {
     name: "Community Conduct",
@@ -244,9 +370,127 @@ const promoterRiskCategories: PromoterRiskCategory[] = [
       "Documented behavior toward audiences and communities during promotion or investigation.",
     max: 10,
     scoringGuide:
-      "0–1: No significant concern. 2–3: Occasional inappropriate behavior without a clear pattern. 4–5: Repeated hostile, manipulative, or misleading interactions. 6–8: Documented manipulation, intimidation, deceptive engagement, or targeted pressure. 9–10: Strong evidence of systematic manipulation, intimidation, or deceptive recruitment.",
+      "0-1: No significant concern. " +
+      "2-3: Occasional inappropriate behavior without a clear pattern. " +
+      "4-5: Repeated hostile, manipulative, or misleading interactions. " +
+      "6-8: Documented manipulation, intimidation, deceptive engagement, or targeted pressure. " +
+      "9-10: Strong evidence of systematic manipulation, intimidation, or deceptive recruitment.",
   },
 ];
+
+const promoterRiskIndicatorCriteria: Record<
+  string,
+  { id: string; label: string; points: number }[]
+> = {
+  "Promotion History": [
+    { id: "prior_failures", label: "Previous promoted projects have documented serious failures", points: 3 },
+    { id: "repeat_concerns", label: "Multiple previous promotions have substantiated material concerns", points: 3 },
+    { id: "ignored_warnings", label: "Promotion continued after credible, evidence-supported warnings", points: 3 },
+    { id: "unresolved_projects", label: "Repeated promotion of projects with unresolved serious concerns", points: 3 },
+    { id: "past_claims", label: "Material claims about previous promotions conflict with documented facts", points: 3 },
+  ],
+
+  "Project Due Diligence": [
+    { id: "contract_unchecked", label: "Promoted token or contract was not independently verified", points: 3 },
+    { id: "team_unverified", label: "Material team, partnership, or affiliation claims were not verified", points: 3 },
+    { id: "warnings_overlooked", label: "Significant, readily identifiable warning signs were overlooked", points: 3 },
+    { id: "safety_unsubstantiated", label: "Safety claims lacked supporting contract, liquidity, or tokenomics checks", points: 3 },
+    { id: "discrepancies_ignored", label: "Promotion continued despite unresolved material discrepancies", points: 3 },
+  ],
+
+  "Misleading Claims": [
+    { id: "guaranteed_returns", label: "Documented guaranteed-profit or risk-free investment claims", points: 3 },
+    { id: "false_partnership", label: "Material partnership or endorsement claims were contradicted by evidence", points: 3 },
+    { id: "unsupported_performance", label: "Material performance or price claims lacked adequate support", points: 3 },
+    { id: "false_urgency", label: "Promotional statements materially misrepresented deadlines or scarcity", points: 3 },
+    { id: "repeated_false_claims", label: "Repeated material claims remained false or misleading after correction opportunities", points: 3 },
+  ],
+
+  "Transparency & Disclosure": [
+    { id: "undisclosed_payment", label: "Evidence supports an undisclosed payment for promotion", points: 2 },
+    { id: "undisclosed_tokens", label: "Material token holdings or allocations were not adequately disclosed", points: 2 },
+    { id: "hidden_affiliation", label: "A material project affiliation or conflict of interest was concealed", points: 2 },
+    { id: "affiliate_omission", label: "Material referral or affiliate incentives were not disclosed", points: 2 },
+    { id: "misleading_disclosure", label: "Disclosures materially contradicted available evidence", points: 2 },
+  ],
+
+  "Promotion Pattern": [
+    { id: "repeated_high_risk", label: "Repeated promotion of projects with independently documented serious concerns", points: 2 },
+    { id: "similar_claims", label: "Recurring unsupported claims across multiple promotions", points: 2 },
+    { id: "warning_recurrence", label: "Similar warning signs recur across promoted projects", points: 2 },
+    { id: "coordinated_campaigns", label: "Evidence supports coordinated promotional campaigns lacking transparency", points: 2 },
+    { id: "repeat_after_outcomes", label: "Similar promotion patterns continued after documented negative outcomes", points: 2 },
+  ],
+
+  "Financial Incentives": [
+    { id: "undisclosed_compensation", label: "Evidence supports material undisclosed promotional compensation", points: 2 },
+    { id: "token_payment", label: "Token payments or allocations connected to promotion were inadequately disclosed", points: 2 },
+    { id: "referral_conflict", label: "Material referral commissions or incentives were not disclosed", points: 2 },
+    { id: "incentive_claim_conflict", label: "Statements about financial incentives conflict with available evidence", points: 2 },
+    { id: "concealed_arrangement", label: "Evidence supports a concealed material financial arrangement", points: 2 },
+  ],
+
+  "Community Conduct": [
+    { id: "targeted_harassment", label: "Documented targeted harassment connected to promotional activity", points: 2 },
+    { id: "suppressed_questions", label: "Evidence supports deliberate suppression of legitimate project concerns", points: 2 },
+    { id: "impersonation", label: "Verified impersonation or deceptive identity use", points: 2 },
+    { id: "coercive_pressure", label: "Documented coercive pressure or intimidation of community members", points: 2 },
+    { id: "deceptive_engagement", label: "Evidence supports fabricated engagement or deceptive community activity", points: 2 },
+  ],
+};
+
+type PromoterChecklistItem = {
+  id: string;
+  label: string;
+};
+
+const promoterVerificationChecklist: Record<
+  string,
+  PromoterChecklistItem[]
+> = {
+  "Identity & Affiliation": [
+    { id: "identity_verified", label: "Identity independently verified" },
+    { id: "official_accounts_verified", label: "Official social accounts verified" },
+    { id: "project_affiliation_verified", label: "Claimed project affiliations independently verified" },
+    { id: "promotion_disclosures_checked", label: "Sponsorships and paid-promotion disclosures checked" },
+    { id: "independent_sources_checked", label: "Claims cross-checked against independent sources" },
+  ],
+  "Promotion History": [
+    { id: "previous_promotions_reviewed", label: "Previous promotions and their outcomes reviewed" },
+    { id: "past_project_issues_checked", label: "Publicly documented issues involving previously promoted projects checked" },
+    { id: "promotion_claims_compared", label: "Past promotional claims compared with verifiable outcomes" },
+  ],
+  "Project Due Diligence": [
+    { id: "project_identity_checked", label: "Promoted project's identity and official links checked" },
+    { id: "contract_address_checked", label: "Token or contract address independently verified" },
+    { id: "project_evidence_reviewed", label: "Project claims checked against primary evidence" },
+  ],
+  "Misleading Claims": [
+    { id: "guaranteed_returns_checked", label: "Claims of guaranteed returns or risk-free profits reviewed" },
+    { id: "claims_evidence_checked", label: "Material claims checked against supporting evidence" },
+    { id: "edited_content_checked", label: "Relevant posts, edits, corrections, and deleted claims documented where available" },
+  ],
+  "Transparency & Disclosure": [
+    { id: "paid_promotion_checked", label: "Paid promotion or sponsorship disclosure checked" },
+    { id: "token_holdings_disclosed", label: "Relevant token holdings or allocations disclosed or investigated" },
+    { id: "conflicts_checked", label: "Potential conflicts of interest documented" },
+  ],
+  "Promotion Pattern": [
+    { id: "campaign_pattern_reviewed", label: "Promotion timing and repeated campaign patterns reviewed" },
+    { id: "coordination_evidence_checked", label: "Evidence of coordinated promotion independently checked" },
+    { id: "repeated_projects_checked", label: "Repeated promotion of projects with documented concerns reviewed" },
+  ],
+  "Financial Incentives": [
+    { id: "referral_rewards_checked", label: "Referral links, commissions, or rewards checked" },
+    { id: "token_compensation_checked", label: "Token payments, allocations, or other compensation investigated" },
+    { id: "incentive_disclosure_checked", label: "Disclosure of relevant financial incentives reviewed" },
+  ],
+  "Community Conduct": [
+    { id: "impersonation_checked", label: "Evidence of impersonation or false identity checked" },
+    { id: "question_suppression_checked", label: "Documented attempts to suppress legitimate questions reviewed" },
+    { id: "harassment_evidence_checked", label: "Relevant, documented harassment or intimidation evidence reviewed" },
+  ],
+};
 
 const promoterEvidenceCategory: PromoterRiskCategory = {
   name: "Evidence Strength",
@@ -254,7 +498,11 @@ const promoterEvidenceCategory: PromoterRiskCategory = {
     "Quality, reliability, corroboration, and completeness of evidence supporting the promoter assessment.",
   max: 15,
   scoringGuide:
-    "0–2: Little or no reliable evidence. 3–5: Limited evidence with significant gaps. 6–8: Multiple reasonably credible sources with unresolved questions. 9–11: Strong corroborated evidence from multiple sources. 12–15: Extensive, highly reliable, independently corroborated evidence.",
+    "0-2: Little or no reliable evidence. " +
+    "3-5: Limited evidence with significant gaps. " +
+    "6-8: Multiple reasonably credible sources with unresolved questions. " +
+    "9-11: Strong corroborated evidence from multiple sources. " +
+    "12-15: Extensive, highly reliable, independently corroborated evidence.",
 };
 
 const demoCases: BlacklistCase[] = [
@@ -468,6 +716,16 @@ const [caseCreationMessage, setCaseCreationMessage] =
     publicDisclosureReady: false,
   });
 
+  const [publicationChecklistMessage, setPublicationChecklistMessage] =
+    useState("");
+
+  const [reviewChecklist, setReviewChecklist] = useState({
+    investigationFindingsReviewed: false,
+    riskAssessmentReviewed: false,
+    evidenceReviewed: false,
+    readyForPublication: false,
+  });
+
   const publishChecklistComplete =
   publishChecklist.caseReview &&
   publishChecklist.evidenceReviewed &&
@@ -479,10 +737,17 @@ const [assessmentType, setAssessmentType] = useState<
 >("project");
 
 const [scores, setScores] = useState<Record<string, number>>({});
+const [riskChecklistSelections, setRiskChecklistSelections] = useState<Record<string, string[]>>({});
 
 const [promoterScores, setPromoterScores] = useState<
   Record<string, number>
 >({});
+
+const [promoterChecklistSelections, setPromoterChecklistSelections] =
+  useState<Record<string, string[]>>({});
+
+const [promoterRiskIndicatorSelections, setPromoterRiskIndicatorSelections] =
+  useState<Record<string, string[]>>({});
 
 const [promoterAssessmentNotes, setPromoterAssessmentNotes] =
   useState("");
@@ -573,9 +838,291 @@ const [promoterAssessmentMessage, setPromoterAssessmentMessage] =
 
   const [updateMessage, setUpdateMessage] = useState("");
   
+  const [caseOverviewPreview, setCaseOverviewPreview] = useState<string | null>(null);
+
   const selectedCase = cases.find(
     (item) => item.id === selectedCaseId
   );
+
+// Builds the same complete Case Overview for preview and PDF export.
+const buildCaseOverviewText = async (): Promise<string> => {
+  if (!selectedCase) {
+    throw new Error("Select a case before previewing or exporting.");
+  }
+
+  const currentCase = selectedCase;
+  const threatType = currentCase.threatType?.trim() || "Unspecified";
+  const isPromoterCase = /\b(scam|fraud)\b/i.test(threatType);
+  const caseNumber =
+    currentCase.reportNumber != null
+      ? `NG-BL-${String(currentCase.reportNumber).padStart(4, "0")}`
+      : String(currentCase.id);
+
+  const lines: string[] = [
+    "NOVAGAIA INTELLIGENCE",
+    "OPERATION BLACKLIST - CASE OVERVIEW",
+    `Exported at (UTC): ${new Date().toISOString()}`,
+    "",
+    "CASE DETAILS",
+    `Case Number: ${caseNumber}`,
+    `Case ID: ${currentCase.id}`,
+    `Project / Subject: ${currentCase.project?.trim() || "Not provided"}`,
+    `Threat Type: ${threatType}`,
+    `Assessment Classification: ${isPromoterCase ? "Promoter Assessment" : "Project / Token Risk Assessment"}`,
+    `Status: ${currentCase.status || "Not recorded"}`,
+    `Workflow Stage: ${workflow.find((item) => item.key === currentCase.stage)?.label ?? currentCase.stage ?? "Not recorded"}`,
+    `Submitted: ${currentCase.submitted || "Not recorded"}`,
+    `Contract / Token Address: ${currentCase.contractAddress?.trim() || "Not provided"}`,
+    "",
+    "CASE DESCRIPTION",
+    currentCase.description?.trim() || "No description provided.",
+    "",
+  ];
+
+  const endpoint = isPromoterCase
+    ? "/api/blacklist/promoter-assessment"
+    : "/api/blacklist/risk-assessment";
+
+  const response = await fetch(
+    `${endpoint}?case_id=${encodeURIComponent(String(currentCase.id))}`,
+    { method: "GET", cache: "no-store" }
+  );
+
+  const payload = await response.json();
+
+  if (!response.ok || payload.success !== true) {
+    throw new Error(
+      payload.error ||
+      `Unable to load the saved ${isPromoterCase ? "promoter" : "project/token"} assessment.`
+    );
+  }
+
+  const assessment = payload.assessment as Record<string, any> | null;
+
+  const displayScore = (value: unknown, maximum: number): string =>
+    typeof value === "number" ? `${value}/${maximum}` : `Not recorded (max ${maximum})`;
+
+  if (!assessment) {
+    lines.push(
+      isPromoterCase ? "PROMOTER ASSESSMENT" : "PROJECT / TOKEN RISK ASSESSMENT",
+      "No saved assessment record was found for this case.",
+      "No assessment score or risk band has been inferred.",
+      ""
+    );
+  } else if (isPromoterCase) {
+    const promoterCategories = [
+      { label: "Promotion History", field: "promotion_history", max: 15 },
+      { label: "Project Due Diligence", field: "project_due_diligence", max: 15 },
+      { label: "Misleading Claims", field: "misleading_claims", max: 15 },
+      { label: "Transparency & Disclosure", field: "transparency_disclosure", max: 10 },
+      { label: "Promotion Pattern", field: "promotion_pattern", max: 10 },
+      { label: "Financial Incentives", field: "financial_incentives", max: 10 },
+      { label: "Community Conduct", field: "community_conduct", max: 10 },
+    ];
+
+    lines.push(
+      "PROMOTER ASSESSMENT",
+      `Promoter Risk Score: ${displayScore(assessment.promoter_risk_score, 85)}`,
+      `Promoter Risk Band: ${assessment.promoter_risk_band || "Not recorded"}`,
+      `Evidence Confidence Score: ${displayScore(assessment.evidence_confidence_score, 15)}`,
+      `Evidence Confidence Level: ${assessment.evidence_confidence_level || "Not recorded"}`,
+      `Evidence Strength: ${assessment.evidence_strength || "Not recorded"}`,
+      "",
+      "PROMOTER RISK PARAMETERS"
+    );
+
+    for (const category of promoterCategories) {
+      lines.push(
+        `${category.label}: ${displayScore(assessment[category.field], category.max)}`
+      );
+    }
+
+    const rawChecklist = assessment.verification_checklist;
+    let savedChecklistObject: Record<string, unknown> = {};
+    const legacySelectedIds = new Set<string>();
+
+    if (Array.isArray(rawChecklist)) {
+      for (const item of rawChecklist) {
+        const id = typeof item === "string" ? item : item?.id;
+        if (typeof id === "string") legacySelectedIds.add(id);
+      }
+    } else if (rawChecklist && typeof rawChecklist === "object") {
+      savedChecklistObject = rawChecklist as Record<string, unknown>;
+    } else if (typeof rawChecklist === "string" && rawChecklist.trim()) {
+      try {
+        const parsed: unknown = JSON.parse(rawChecklist);
+
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            const id = typeof item === "string" ? item : item?.id;
+            if (typeof id === "string") legacySelectedIds.add(id);
+          }
+        } else if (parsed && typeof parsed === "object") {
+          savedChecklistObject = parsed as Record<string, unknown>;
+        }
+      } catch {
+        lines.push("Checklist note: saved checklist could not be parsed.");
+      }
+    }
+
+const isRiskIndicatorChecked = (
+      category: string,
+      itemId: string
+    ): boolean => {
+      const savedItems =
+        savedChecklistObject[`__risk_indicator__:${category}`];
+
+      return (
+        (Array.isArray(savedItems) && savedItems.includes(itemId)) ||
+        legacySelectedIds.has(`__risk_indicator__:${itemId}`) ||
+        legacySelectedIds.has(`__risk_indicator__:${category}:${itemId}`)
+      );
+    };
+
+lines.push("", "EVIDENCE-BASED PROMOTER RISK INDICATORS");
+
+    for (const [category, items] of Object.entries(promoterRiskIndicatorCriteria)) {
+      lines.push("", category);
+
+      for (const item of items) {
+        const checked = isRiskIndicatorChecked(category, item.id);
+
+        lines.push(
+          `${checked ? "[X]" : "[ ]"} ${item.label} (${item.points} points)`
+        );
+      }
+    }
+
+    lines.push(
+      "",
+      "PROMOTER ASSESSMENT NOTES",
+      assessment.assessment_notes?.trim() || "No assessment notes recorded."
+    );
+  } else {
+    const projectCategories = [
+      { label: "Contract & Token Controls", field: "contract_token_controls", max: 20 },
+      { label: "Holder Distribution", field: "holder_distribution", max: 15 },
+      { label: "Liquidity & Exit Risk", field: "liquidity_exit_risk", max: 15 },
+      { label: "Team & Transparency", field: "team_transparency", max: 10 },
+      { label: "Website & Infrastructure", field: "website_infrastructure", max: 10 },
+      { label: "Marketing & Promotion", field: "marketing_promotion", max: 10 },
+      { label: "Community Behavior", field: "community_behavior", max: 10 },
+      { label: "On-Chain Behavior", field: "on_chain_behavior", max: 10 },
+    ];
+
+    lines.push(
+      "PROJECT / TOKEN RISK ASSESSMENT",
+      `Overall Risk Score: ${displayScore(assessment.overall_score, 100)}`,
+      `Risk Band: ${assessment.risk_band || "Not recorded"}`,
+      "",
+      "PROJECT / TOKEN RISK PARAMETERS"
+    );
+
+    for (const category of projectCategories) {
+      lines.push(
+        `${category.label}: ${displayScore(assessment[category.field], category.max)}`
+      );
+    }
+
+    lines.push(
+      "",
+      "PROJECT / TOKEN ASSESSMENT NOTES",
+      assessment.assessment_notes?.trim() || "No assessment notes recorded.",
+      "",
+      "Indicator checkbox limitation: The current Project / Token Risk API does not persist individual indicator selections. No saved checkbox states are available to report."
+    );
+  }
+
+  // Load the saved Response, Update, and Clearance records.
+  const workflowRecordEndpoints = [
+    {
+      label: "RESPONSE RECORD",
+      endpoint: "/api/blacklist/response",
+      key: "response",
+      fields: [
+        { label: "Response Type", field: "response_type" },
+        { label: "Response Details", field: "response_details" },
+        { label: "Last Updated (UTC)", field: "updated_at" },
+      ],
+    },
+    {
+      label: "UPDATE RECORD",
+      endpoint: "/api/blacklist/update",
+      key: "update",
+      fields: [
+        { label: "Update Type", field: "update_type" },
+        { label: "Update Details", field: "update_details" },
+        { label: "Last Updated (UTC)", field: "updated_at" },
+      ],
+    },
+    {
+      label: "CLEARANCE RECORD",
+      endpoint: "/api/blacklist/clearance",
+      key: "clearance",
+      fields: [
+        { label: "Clearance Decision", field: "clearance_decision" },
+        { label: "Clearance Reason", field: "clearance_reason" },
+        { label: "Last Updated (UTC)", field: "updated_at" },
+      ],
+    },
+  ] as const;
+
+  for (const recordConfig of workflowRecordEndpoints) {
+    const recordResponse = await fetch(
+      `${recordConfig.endpoint}?case_id=${encodeURIComponent(String(currentCase.id))}`,
+      { method: "GET", cache: "no-store" }
+    );
+
+    const recordPayload = await recordResponse.json();
+
+    if (!recordResponse.ok || recordPayload.success !== true) {
+      throw new Error(
+        recordPayload.error ||
+        `Unable to load the saved ${recordConfig.label.toLowerCase()}.`
+      );
+    }
+
+    const savedRecord = recordPayload[recordConfig.key] as
+      | Record<string, unknown>
+      | null;
+
+    if (!savedRecord) {
+      continue;
+    }
+
+    lines.push("", recordConfig.label);
+
+    for (const fieldConfig of recordConfig.fields) {
+      const value = savedRecord[fieldConfig.field];
+
+      lines.push(
+        `${fieldConfig.label}: ${
+          value !== null && value !== undefined && String(value).trim()
+            ? String(value).trim()
+            : "Not recorded"
+        }`
+      );
+    }
+  }
+
+  lines.push(
+    "",
+    "PUBLICATION / REVIEW CHECKLIST",
+    `[${currentCase.publicationChecklist?.caseReview === true ? "X" : " "}] Case review confirmed`,
+    `[${currentCase.publicationChecklist?.evidenceReviewed === true ? "X" : " "}] Evidence reviewed`,
+    `[${currentCase.publicationChecklist?.riskAssessmentReviewed === true ? "X" : " "}] Risk assessment reviewed`,
+    `[${currentCase.publicationChecklist?.publicDisclosureReady === true ? "X" : " "}] Public disclosure marked ready`,
+    "",
+    "IMPORTANT CONTEXT",
+    "This document reports the selected case and its saved assessment record. A report or risk score is an assessment, not proof that alleged wrongdoing occurred.",
+    "Review supporting evidence and the complete case record before making public claims.",
+    "",
+    "END OF CASE OVERVIEW"
+  );
+
+  return lines.join("\n");
+};
+
 
     console.log(
   "SELECTED CASE DEBUG:",
@@ -1562,6 +2109,15 @@ useEffect(() => {
       publicDisclosureReady: false,
     }
   );
+
+  setReviewChecklist(
+    currentCase?.publicationChecklist?.reviewChecklist ?? {
+      investigationFindingsReviewed: false,
+      riskAssessmentReviewed: false,
+      evidenceReviewed: false,
+      readyForPublication: false,
+    }
+  );
 }, [selectedCaseId, cases]);
 
 async function loadBlacklistCases() {
@@ -1593,11 +2149,18 @@ async function loadBlacklistCases() {
         evidenceReviewed?: boolean;
         riskAssessmentReviewed?: boolean;
         publicDisclosureReady?: boolean;
+        reviewChecklist?: {
+          investigationFindingsReviewed?: boolean;
+          riskAssessmentReviewed?: boolean;
+          evidenceReviewed?: boolean;
+          readyForPublication?: boolean;
+        };
       };
       created_at: string;
       description?: string;
       evidence?: string | null;
       contact?: string | null;
+      contract_address?: string | null;
     }) => ({
       id: item.id,
       project: item.subject,
@@ -1641,6 +2204,7 @@ async function loadBlacklistCases() {
       description: item.description ?? "",
       reportId: item.report_id,
       reportNumber: item.case_number,
+      contractAddress: item.contract_address ?? null,
 
       publicationChecklist: {
         caseReview:
@@ -1651,6 +2215,12 @@ async function loadBlacklistCases() {
           item.publication_checklist?.riskAssessmentReviewed ?? false,
         publicDisclosureReady:
           item.publication_checklist?.publicDisclosureReady ?? false,
+        reviewChecklist: {
+          investigationFindingsReviewed: item.publication_checklist?.reviewChecklist?.investigationFindingsReviewed ?? false,
+          riskAssessmentReviewed: item.publication_checklist?.reviewChecklist?.riskAssessmentReviewed ?? false,
+          evidenceReviewed: item.publication_checklist?.reviewChecklist?.evidenceReviewed ?? false,
+          readyForPublication: item.publication_checklist?.reviewChecklist?.readyForPublication ?? false,
+        },
       },
     })
   );
@@ -1759,6 +2329,7 @@ async function loadThreatReports() {
       status: "under_review",
       stage: "triage",
       description: report.description,
+      contractAddress: report.contract_address ?? null,
       reportId: createdCase.report_id,
       reportNumber: report.report_number,
     };
@@ -1813,38 +2384,95 @@ async function loadPromoterAssessment(caseId: string) {
     }
 
     const assessment = result.assessment;
+    console.log(
+      "PROMOTER NOTES DEBUG:",
+      JSON.stringify(
+        {
+          caseId,
+          assessmentNotes: assessment?.assessment_notes,
+          assessmentRecordFound: Boolean(assessment),
+        },
+        null,
+        2
+      )
+    );
+
+    const savedChecklist = assessment?.verification_checklist;
+
+    const savedChecklistEntries =
+      savedChecklist &&
+      typeof savedChecklist === "object" &&
+      !Array.isArray(savedChecklist)
+        ? Object.entries(savedChecklist)
+            .filter((entry) => Array.isArray(entry[1]))
+            .map(([category, items]) => [
+              category,
+              (items as unknown[]).filter(
+                (item): item is string => typeof item === "string"
+              ),
+            ] as [string, string[]])
+        : [];
+
+    setPromoterChecklistSelections(
+      Object.fromEntries(
+        savedChecklistEntries.filter(
+          ([category]) =>
+            !category.startsWith("__risk_indicator__:")
+        )
+      )
+    );
+
+setPromoterRiskIndicatorSelections(
+  Object.fromEntries(
+    savedChecklistEntries
+      .filter(([category]) =>
+        category.startsWith("__risk_indicator__:")
+      )
+      .map(([category, items]) => [
+        category.slice("__risk_indicator__:".length),
+        items,
+      ])
+  )
+);
 
     if (!assessment) {
       setPromoterScores({});
+      setPromoterChecklistSelections({});
+      setPromoterRiskIndicatorSelections({});
       setPromoterAssessmentNotes("");
       return;
     }
 
-    setPromoterScores({
-      "Promotion History":
-        assessment.promotion_history ?? 0,
+    const loadedPromoterScores: Record<string, number> = {
+      "Promotion History": assessment.promotion_history ?? 0,
+      "Project Due Diligence": assessment.project_due_diligence ?? 0,
+      "Misleading Claims": assessment.misleading_claims ?? 0,
+      "Transparency & Disclosure": assessment.transparency_disclosure ?? 0,
+      "Promotion Pattern": assessment.promotion_pattern ?? 0,
+      "Financial Incentives": assessment.financial_incentives ?? 0,
+      "Community Conduct": assessment.community_conduct ?? 0,
+      "Evidence Strength": assessment.evidence_strength ?? 0,
+    };
 
-      "Project Due Diligence":
-        assessment.project_due_diligence ?? 0,
+    for (const category of promoterRiskCategories) {
+      const selectedIds =
+        savedChecklistEntries.find(
+          ([key]) => key === `__risk_indicator__:${category.name}`
+        )?.[1] ?? [];
 
-      "Misleading Claims":
-        assessment.misleading_claims ?? 0,
+      const criteria = promoterRiskIndicatorCriteria[category.name];
 
-      "Transparency & Disclosure":
-        assessment.transparency_disclosure ?? 0,
+      if (selectedIds.length > 0 && criteria) {
+        loadedPromoterScores[category.name] = Math.min(
+          category.max,
+          criteria
+            .filter((item) => selectedIds.includes(item.id))
+            .reduce((total, item) => total + item.points, 0)
+        );
+      }
+    }
 
-      "Promotion Pattern":
-        assessment.promotion_pattern ?? 0,
-
-      "Financial Incentives":
-        assessment.financial_incentives ?? 0,
-
-      "Community Conduct":
-        assessment.community_conduct ?? 0,
-
-      "Evidence Strength":
-        assessment.evidence_strength ?? 0,
-    });
+    setPromoterScores(loadedPromoterScores);
 
     setPromoterAssessmentNotes(
       assessment.assessment_notes ?? ""
@@ -2015,6 +2643,7 @@ async function loadRiskAssessment(caseId: string) {
 
     if (!assessment) {
       setScores({});
+      setRiskChecklistSelections({});
       setAssessmentNotes("");
       return;
     }
@@ -2044,6 +2673,25 @@ async function loadRiskAssessment(caseId: string) {
       "On-Chain Behavior":
         assessment.on_chain_behavior ?? 0,
     });
+
+    const savedChecklist = assessment.verification_checklist;
+    const restoredSelections: Record<string, string[]> = {};
+
+    if (
+      savedChecklist &&
+      typeof savedChecklist === "object" &&
+      !Array.isArray(savedChecklist)
+    ) {
+      for (const [category, items] of Object.entries(savedChecklist)) {
+        if (Array.isArray(items)) {
+          restoredSelections[category] = items.filter(
+            (item): item is string => typeof item === "string"
+          );
+        }
+      }
+    }
+
+    setRiskChecklistSelections(restoredSelections);
 
     setAssessmentNotes(
       assessment.assessment_notes ?? ""
@@ -2107,6 +2755,8 @@ async function saveRiskAssessment() {
 
           assessment_notes:
             assessmentNotes.trim() || null,
+
+          verification_checklist: riskChecklistSelections,
         }),
       }
     );
@@ -2154,7 +2804,7 @@ async function savePromoterAssessment() {
         body: JSON.stringify({
           case_id: selectedCase.id,
 
-          // Promoter Risk — 85 points
+          // Promoter Risk Assessment 85 points
           promotion_history:
             promoterScores["Promotion History"] || 0,
 
@@ -2182,15 +2832,24 @@ async function savePromoterAssessment() {
           promoter_risk_band:
             promoterRiskLevel.label,
 
-          // Evidence Confidence — 15 points
+          // Evidence Confidence 15 points
           evidence_strength:
             promoterScores["Evidence Strength"] || 0,
 
           evidence_confidence_score:
             evidenceConfidenceScore,
 
-          evidence_confidence_level:
-            evidenceConfidenceLevel.label,
+          verification_checklist: {
+            ...promoterChecklistSelections,
+            ...Object.fromEntries(
+              Object.entries(promoterRiskIndicatorSelections).map(
+                ([category, items]) => [
+                  `__risk_indicator__:${category}`,
+                  items,
+                ]
+              )
+            ),
+          },
 
           assessment_notes:
             promoterAssessmentNotes.trim() || null,
@@ -2244,14 +2903,19 @@ async function moveCaseToStage(stage: WorkflowStage) {
   // ...
 
   const currentIndex = getStageIndex(currentCase.stage);
+console.log("UPDATE TRANSITION CHECK:", {
+  currentStage: currentCase.stage,
+  requestedStage: stage,
+  selectedCaseId,
+});
   const targetIndex = getStageIndex(stage);
 
 // Do not allow a case to skip forward over workflow stages.
 //
 // The Promoter Assessment is completed during the
-// investigation stage, so Investigate → Review is valid.
+// investigation stage, so Investigate -> Review is valid.
 // The Project/Token Risk Assessment follows the normal
-// Investigate → Risk Assess → Review path.
+// Investigate -> Risk Assess -> Review path.
 const allowedTransitions: Record<
   WorkflowStage,
   WorkflowStage[]
@@ -2345,7 +3009,10 @@ if (!isAllowedTransition) {
       body: JSON.stringify({
         case_id: selectedCaseId,
         status: nextStatus,
-        publication_checklist: publishChecklist,
+        publication_checklist: {
+                                  ...publishChecklist,
+                                  reviewChecklist,
+                                },
       }),
     });
 
@@ -2369,7 +3036,7 @@ if (!isAllowedTransition) {
     } else if (stage === "review") {
       setActiveTab("review");
     } else if (stage === "publish") {
-      setActiveTab("publish");
+      setActiveTab("response");
     } else if (stage === "response") {
       setActiveTab("response");
     } else if (stage === "update") {
@@ -2410,6 +3077,34 @@ if (!isAllowedTransition) {
     setAssessmentMessage("");
   }
 
+  function toggleRiskChecklistItem(
+    category: string,
+    itemId: string,
+    checked: boolean
+  ) {
+    const criteria = riskChecklistCriteria[category];
+
+    if (!criteria) return;
+
+    const currentSelected = riskChecklistSelections[category] ?? [];
+    const nextSelected = checked
+      ? currentSelected.includes(itemId)
+        ? currentSelected
+        : [...currentSelected, itemId]
+      : currentSelected.filter((id) => id !== itemId);
+
+    const nextScore = criteria
+      .filter((item) => nextSelected.includes(item.id))
+      .reduce((total, item) => total + item.points, 0);
+
+    setRiskChecklistSelections((current) => ({
+      ...current,
+      [category]: nextSelected,
+    }));
+
+    updateScore(category, Math.min(criteria.reduce((total, item) => total + item.points, 0), nextScore));
+  }
+
   function updatePromoterScore(
   category: string,
   value: number
@@ -2422,14 +3117,77 @@ if (!isAllowedTransition) {
   setPromoterAssessmentMessage("");
 }
 
+function togglePromoterRiskIndicator(
+  category: string,
+  itemId: string,
+  checked: boolean
+) {
+  const criteria = promoterRiskIndicatorCriteria[category];
+
+  if (!criteria) return;
+
+  const currentSelected =
+    promoterRiskIndicatorSelections[category] ?? [];
+
+  const nextSelected = checked
+    ? currentSelected.includes(itemId)
+      ? currentSelected
+      : [...currentSelected, itemId]
+    : currentSelected.filter((id) => id !== itemId);
+
+  const nextScore = criteria
+    .filter((item) => nextSelected.includes(item.id))
+    .reduce((total, item) => total + item.points, 0);
+
+  const categoryMaximum =
+    promoterRiskCategories.find((item) => item.name === category)?.max ?? 0;
+
+  setPromoterRiskIndicatorSelections((current) => ({
+    ...current,
+    [category]: nextSelected,
+  }));
+
+  setPromoterScores((current) => ({
+    ...current,
+    [category]: Math.min(categoryMaximum, nextScore),
+  }));
+
+  setPromoterAssessmentMessage("");
+}
+
+  function togglePromoterChecklistItem(
+    category: string,
+    itemId: string,
+    checked: boolean
+  ) {
+    setPromoterChecklistSelections((current) => {
+      const existing = current[category] ?? [];
+
+      const updated = checked
+        ? existing.includes(itemId)
+          ? existing
+          : [...existing, itemId]
+        : existing.filter((id) => id !== itemId);
+
+      return {
+        ...current,
+        [category]: updated,
+      };
+    });
+
+    setPromoterAssessmentMessage("");
+  }
+
   function resetAssessment() {
     setScores({});
     setAssessmentNotes("");
     setAssessmentMessage("");
   }
 
-  function resetPromoterAssessment() {
+function resetPromoterAssessment() {
   setPromoterScores({});
+  setPromoterChecklistSelections({});
+  setPromoterRiskIndicatorSelections({});
   setPromoterAssessmentNotes("");
   setPromoterAssessmentMessage("");
 }
@@ -2607,6 +3365,14 @@ if (!isAllowedTransition) {
                 <p className="mt-3 text-sm leading-6 text-slate-400">
                   {report.description}
                 </p>
+                {report.contract_address && (
+                  <p className="mt-2 break-all text-xs text-slate-500">
+                    Contract / Token Address:{" "}
+                    <span className="text-slate-400">
+                      {report.contract_address}
+                    </span>
+                  </p>
+                )}
 
                 {report.evidence && (
                   <p className="mt-2 text-xs text-slate-500">
@@ -2715,6 +3481,8 @@ if (!isAllowedTransition) {
 
                     // Clear previous Promoter assessment state.
                     setPromoterScores({});
+                    setPromoterChecklistSelections({});
+                    setPromoterRiskIndicatorSelections({});
                     setPromoterAssessmentNotes("");
                     setPromoterAssessmentMessage("");
 
@@ -2814,7 +3582,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    📋 Triage
+                    Triage
                   </button>
 
                   <button
@@ -2826,7 +3594,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    🔎 Investigate
+                    Investigate
                   </button>
                   <button
                     type="button"
@@ -2849,7 +3617,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    👥 Review
+                    Review
                   </button>
 
                   <button
@@ -2861,7 +3629,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                                     >
-                    📰 Publish
+                    Publish
                   </button>
 
                   <button
@@ -2873,7 +3641,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    💬 Response
+                    Response
                   </button>
 
                   <button
@@ -2885,7 +3653,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    🔄 Update
+                    Update
                   </button>
 
                   <button
@@ -2897,7 +3665,7 @@ if (!isAllowedTransition) {
                         : "text-slate-500"
                     }`}
                   >
-                    ✓ Clear
+                    Clear
                   </button>
                 </div>
               </div>
@@ -2905,6 +3673,102 @@ if (!isAllowedTransition) {
               {/* Case Overview */}
               {activeTab === "cases" ? (
                 <div className="space-y-6 p-5 sm:p-6">
+                    <div className="flex flex-wrap justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setCaseOverviewPreview(await buildCaseOverviewText());
+                          } catch (error) {
+                            console.error("Case Overview preview error:", error);
+                            window.alert(error instanceof Error ? error.message : "Unable to build the Case Overview.");
+                          }
+                        }}
+                        className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+                      >
+                        Preview Case Overview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const report = await buildCaseOverviewText();
+                            const doc = new jsPDF({ unit: "mm", format: "a4" });
+                            const marginX = 15;
+                            const usableWidth = 180;
+                            let y = 15;
+
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(10);
+
+                            for (const line of report.split("\n")) {
+                              const wrapped = doc.splitTextToSize(line || " ", usableWidth);
+
+                              for (const part of wrapped) {
+                                if (y > 282) {
+                                  doc.addPage();
+                                  y = 15;
+                                }
+
+                                doc.text(part, marginX, y);
+                                y += 5;
+                              }
+                            }
+
+                            const safeCaseNumber = String(
+                              selectedCase?.reportNumber ?? selectedCase?.id ?? "case"
+                            ).replace(/[^a-zA-Z0-9-]/g, "-");
+
+                            doc.save(`NG-BL-${safeCaseNumber}-case-overview.pdf`);
+                          } catch (error) {
+                            console.error("Case Overview PDF error:", error);
+                            window.alert(error instanceof Error ? error.message : "Unable to export the Case Overview PDF.");
+                          }
+                        }}
+                        className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+                      >
+                        Export Case Overview (PDF)
+                      </button>
+                    </div>
+                    {caseOverviewPreview !== null && (
+                      <div className="space-y-3 rounded-xl border border-sky-500/30 bg-sky-500/5 p-4">
+                        <h3 className="text-sm font-semibold text-sky-300">
+                          Case Overview Preview
+                        </h3>
+                        <textarea
+                          readOnly
+                          value={caseOverviewPreview}
+                          rows={22}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm leading-6 text-slate-200"
+                        />
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(caseOverviewPreview);
+                              } catch (error) {
+                                console.error("Copy Case Overview error:", error);
+                                window.alert("Unable to copy. Please select the preview text and copy it manually.");
+                              }
+                            }}
+                            className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 hover:bg-sky-500/20"
+                          >
+                            Copy Case Overview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCaseOverviewPreview(null)}
+                            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                          >
+                            Close Preview
+                          </button>
+                        </div>
+                        <p className="text-xs leading-5 text-slate-400">
+                          This preview does not publish to X. Review the assessment and supporting evidence before sharing publicly.
+                        </p>
+                      </div>
+                    )}
                   <div>
                     <h3 className="text-sm font-semibold">
                       Case Description
@@ -2915,13 +3779,22 @@ if (!isAllowedTransition) {
                     </p>
                   </div>
 
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold">
+                        Contract / Token Address
+                      </h3>
+                      <p className="mt-2 break-all rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-300">
+                        {selectedCase.contractAddress || "Not provided"}
+                      </p>
+                    </div>
+
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={() => moveCaseToStage("triage")}
                       className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
                     >
-                      📋 Move to Triage
+                      Triage
                     </button>
                   </div>
 
@@ -2961,7 +3834,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("triage")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        📋 Start Triage
+                        Triage
                       </button>
 
                       <button
@@ -2969,7 +3842,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("investigate")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        🔎 Investigate
+                        Investigate
                       </button>
 
                       {selectedCase?.stage === "investigate" && (
@@ -2981,7 +3854,7 @@ if (!isAllowedTransition) {
                           }}
                           className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
                         >
-                          📊 Open Risk Assess
+                          Open Risk Assess
                         </button>
                       )}
 
@@ -2990,23 +3863,23 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("review")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        👥 Review
+                        Review
                       </button>
 
                       <button
-                        type="button"
-                        onClick={() => moveCaseToStage("publish")}
-                        className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
-                      >
-                        📰 Publish
-                      </button>
+  type="button"
+  onClick={() => setActiveTab("publish")}
+  className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
+>
+  Publish
+</button>
 
                       <button
                         type="button"
                         onClick={() => moveCaseToStage("response")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        💬 Response
+                        Response
                       </button>
 
                       <button
@@ -3014,7 +3887,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("update")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        🔄 Update
+                        Update
                       </button>
 
                       <button
@@ -3022,7 +3895,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("clear")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                       >
-                        ✓ Clear Case
+                        Clear Case
                       </button>
                     </div>
                   </div>
@@ -3036,7 +3909,7 @@ if (!isAllowedTransition) {
                     </p>
 
                     <h2 className="mt-2 text-2xl font-bold">
-                      📋 Triage Case
+                      Triage Case
                     </h2>
 
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
@@ -3629,7 +4502,7 @@ if (!isAllowedTransition) {
                       >
                         {savingTriage
                           ? "Saving Triage..."
-                          : "💾 Save Triage"}
+                          : "Save Triage"}
                       </button>
 
                       <button
@@ -3637,7 +4510,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("investigate")}
                         className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-400"
                       >
-                        🔎 Start Investigation
+                        Start Investigation
                       </button>
 
                       <button
@@ -3645,7 +4518,7 @@ if (!isAllowedTransition) {
                         disabled
                         className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        ✕ Dismiss Case
+                        Dismiss Case
                       </button>
                     </div>
                   </div>
@@ -3659,7 +4532,7 @@ if (!isAllowedTransition) {
                     </p>
 
                     <h2 className="mt-2 text-2xl font-bold">
-                      🔎 Investigate Case
+                      Investigate Case
                     </h2>
 
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
@@ -4212,8 +5085,8 @@ if (!isAllowedTransition) {
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {loadingInvestigation
-                          ? "💾 Saving Investigation..."
-                          : "💾 Save Investigation"}
+                          ? "Saving Investigation..."
+                          : "Save Investigation"}
                       </button>
 
                       <button
@@ -4221,7 +5094,7 @@ if (!isAllowedTransition) {
                         onClick={() => moveCaseToStage("risk")}
                         className="rounded-xl bg-blue-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-blue-400"
                       >
-                        ⚖️ Continue to Risk Assessment
+                        Continue to Risk Assessment
                       </button>
 
                       <button
@@ -4229,7 +5102,7 @@ if (!isAllowedTransition) {
                         onClick={() => setActiveTab("triage")}
                         className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-900"
                       >
-                        ← Return to Triage
+                        Triage
                       </button>
                     </div>
                   </div>
@@ -4268,7 +5141,7 @@ if (!isAllowedTransition) {
                       </p>
 
                       <p className="mt-1 text-sm text-slate-400">
-                        {selectedCase?.project ?? "—"}
+                        {selectedCase?.project ?? "Project not available"}
                       </p>
                     </div>
 
@@ -4280,7 +5153,7 @@ if (!isAllowedTransition) {
                       <p className="mt-2 text-lg font-bold text-emerald-400">
                         {selectedCase?.stage === "review"
                           ? "Final Investigator Review"
-                          : selectedCase?.stage ?? "—"}
+                          : selectedCase?.stage ?? "Not set"}
                       </p>
                     </div>
                   </div>
@@ -4305,6 +5178,13 @@ if (!isAllowedTransition) {
                       <label className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          checked={reviewChecklist.investigationFindingsReviewed}
+                          onChange={(event) =>
+                            setReviewChecklist((current) => ({
+                              ...current,
+                              investigationFindingsReviewed: event.target.checked,
+                            }))
+                          }
                           className="h-4 w-4 rounded border-slate-700 bg-slate-950"
                         />
                         Investigation findings reviewed
@@ -4313,6 +5193,13 @@ if (!isAllowedTransition) {
                       <label className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          checked={reviewChecklist.riskAssessmentReviewed}
+                          onChange={(event) =>
+                            setReviewChecklist((current) => ({
+                              ...current,
+                              riskAssessmentReviewed: event.target.checked,
+                            }))
+                          }
                           className="h-4 w-4 rounded border-slate-700 bg-slate-950"
                         />
                         Risk assessment reviewed
@@ -4321,6 +5208,13 @@ if (!isAllowedTransition) {
                       <label className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          checked={reviewChecklist.evidenceReviewed}
+                          onChange={(event) =>
+                            setReviewChecklist((current) => ({
+                              ...current,
+                              evidenceReviewed: event.target.checked,
+                            }))
+                          }
                           className="h-4 w-4 rounded border-slate-700 bg-slate-950"
                         />
                         Evidence reviewed
@@ -4329,6 +5223,13 @@ if (!isAllowedTransition) {
                       <label className="flex items-center gap-3">
                         <input
                           type="checkbox"
+                          checked={reviewChecklist.readyForPublication}
+                          onChange={(event) =>
+                            setReviewChecklist((current) => ({
+                              ...current,
+                              readyForPublication: event.target.checked,
+                            }))
+                          }
                           className="h-4 w-4 rounded border-slate-700 bg-slate-950"
                         />
                         Case information is ready for publication decision
@@ -4386,22 +5287,22 @@ if (!isAllowedTransition) {
                       }}
                       className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm font-semibold text-amber-300 transition hover:border-amber-400/60 hover:bg-amber-500/10 hover:text-amber-200"
                     >
-                      ↩️ Return to Investigation
+                      Return to Investigation
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
-                        if (!reviewConfirmed) {
-                          return;
-                        }
+    if (!reviewConfirmed) {
+      return;
+    }
 
-                        moveCaseToStage("publish");
-                      }}
+    setActiveTab("publish");
+  }}
                       disabled={!reviewConfirmed}
                       className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-emerald-500"
                     >
-                      📰 Approve for Publish
+                      Publish
                     </button>
                   </div>
                 </div>
@@ -4439,7 +5340,7 @@ if (!isAllowedTransition) {
                       </p>
 
                       <p className="mt-1 text-sm text-slate-400">
-                        {selectedCase?.project ?? "—"}
+                        {selectedCase?.project ?? "Project not available"}
                       </p>
                     </div>
 
@@ -4561,13 +5462,18 @@ if (!isAllowedTransition) {
                       onClick={() => setActiveTab("review")}
                       className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-white"
                     >
-                      ↩️ Back to Review
+                      Back to Review
                     </button>
 
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!selectedCaseId) return;
+                        setPublicationChecklistMessage("");
+
+                        if (!selectedCaseId) {
+                          setPublicationChecklistMessage("Please select a case first.");
+                          return;
+                        }
 
                         try {
                           const response = await fetch("/api/cases", {
@@ -4576,22 +5482,11 @@ if (!isAllowedTransition) {
                               "Content-Type": "application/json",
                             },
                             body: JSON.stringify({
-                              case_id: selectedCaseId,
-                              status:
-                                selectedCase?.stage === "triage"
-                                  ? "triage"
-                                  : selectedCase?.stage === "investigate"
-                                    ? "investigating"
-                                    : selectedCase?.stage === "risk"
-                                      ? "risk_assessment"
-                                      : selectedCase?.stage === "review"
-                                        ? "review"
-                                        : selectedCase?.stage === "publish"
-                                          ? "published"
-                                          : selectedCase?.stage === "clear"
-                                            ? "cleared"
-                                            : "triage",
-                              publication_checklist: publishChecklist,
+                                case_id: selectedCaseId,
+                                publication_checklist: {
+                                  ...publishChecklist,
+                                  reviewChecklist,
+                                },
                             }),
                           });
 
@@ -4604,28 +5499,51 @@ if (!isAllowedTransition) {
                             );
                           }
 
+                          setPublicationChecklistMessage(
+                            "Publication checklist saved successfully."
+                          );
+
                           setCases((currentCases) =>
                             currentCases.map((item) =>
                               item.id === selectedCaseId
                                 ? {
                                     ...item,
-                                    publicationChecklist: publishChecklist,
+                                    publicationChecklist: {
+                                      ...publishChecklist,
+                                      reviewChecklist,
+                                    },
                                   }
                                 : item
                             )
                           );
                         } catch (error) {
-                          console.error(
-                            "Save publication checklist error:",
-                            error
+                          console.error("Save publication checklist error:", error);
+
+                          setPublicationChecklistMessage(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to save publication checklist."
                           );
                         }
                       }}
                       className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 transition hover:bg-emerald-500/20"
                     >
-                      💾 Save Checklist
+                      Save Checklist
                     </button>
-
+                      {publicationChecklistMessage && (
+                        <p
+                          className={`mt-3 text-sm font-semibold ${
+                            publicationChecklistMessage.toLowerCase().includes("unable") ||
+                            publicationChecklistMessage.toLowerCase().includes("error") ||
+                            publicationChecklistMessage.toLowerCase().includes("please")
+                              ? "text-red-400"
+                              : "text-emerald-400"
+                          }`}
+                          role="status"
+                        >
+                          {publicationChecklistMessage}
+                        </p>
+                      )}
                     <button
                       type="button"
                       onClick={() => {
@@ -4633,12 +5551,12 @@ if (!isAllowedTransition) {
                           return;
                         }
 
-                        moveCaseToStage("response");
+                        void moveCaseToStage("publish");
                       }}
                       disabled={!publishChecklistComplete}
                       className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-emerald-500"
                     >
-                      📰 Publish Case
+                      Publish Case
                     </button>
                   </div>
                 </div>
@@ -4677,7 +5595,7 @@ if (!isAllowedTransition) {
                       </p>
 
                       <p className="mt-1 text-sm text-slate-400">
-                        {selectedCase?.project ?? "—"}
+                        {selectedCase?.project ?? "Project not available"}
                       </p>
                     </div>
 
@@ -4819,8 +5737,8 @@ if (!isAllowedTransition) {
                     text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {savingResponse
-                        ? "💾 Saving..."
-                        : "💾 Save Response"}
+                        ? "Saving..."
+                        : "Save Response"}
                     </button>
 
                     <button
@@ -4828,7 +5746,7 @@ if (!isAllowedTransition) {
                       onClick={() => moveCaseToStage("update")}
                       className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                     >
-                      🔄 Continue to Update
+                      Update
                     </button>
                   </div>
                 </div>
@@ -4867,7 +5785,7 @@ if (!isAllowedTransition) {
                       </p>
 
                       <p className="mt-1 text-sm text-slate-400">
-                        {selectedCase?.project ?? "—"}
+                        {selectedCase?.project ?? "Project not available"}
                       </p>
                     </div>
 
@@ -5000,7 +5918,7 @@ if (!isAllowedTransition) {
                       }
                       className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      💾 Save Update
+                      Update
                     </button>
 
                     <button
@@ -5008,7 +5926,7 @@ if (!isAllowedTransition) {
                       onClick={() => moveCaseToStage("clear")}
                       className="rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                     >
-                      ✓ Continue to Clear
+                      Clear
                     </button>
                   </div>
                 </div>
@@ -5046,7 +5964,7 @@ if (!isAllowedTransition) {
                       </p>
 
                       <p className="mt-1 text-sm text-slate-400">
-                        {selectedCase?.project ?? "—"}
+                        {selectedCase?.project ?? "Project not available"}
                       </p>
                     </div>
 
@@ -5178,8 +6096,8 @@ if (!isAllowedTransition) {
                       className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {savingClearance
-                        ? "💾 Saving..."
-                        : "💾 Save Clearance"}
+                        ? "Saving..."
+                        : "Save Clearance"}
                     </button>
 
                     {clearanceMessage && (
@@ -5193,7 +6111,7 @@ if (!isAllowedTransition) {
                       disabled
                       className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      ✓ Clear Case
+                      Clear Case
                     </button>
                   </div>
                 </div>
@@ -5231,7 +6149,7 @@ if (!isAllowedTransition) {
                         }`}
                       >
                         <p className="text-sm font-semibold">
-                          🔍 Project / Token Risk Assessment
+                          Project / Token Risk Assessment
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -5253,7 +6171,7 @@ if (!isAllowedTransition) {
                         }`}
                       >
                         <p className="text-sm font-semibold">
-                          📣 Scam / Fraud Promoter Assessment
+                          Scam / Fraud Promoter Assessment
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -5363,36 +6281,54 @@ if (!isAllowedTransition) {
                                     </p>
                                   </div>
 
-                                  <div className="flex min-w-[220px] items-center gap-3">
-                                    <input
-                                      type="range"
-                                      min="0"
-                                      max={category.max}
-                                      value={value ?? 0}
-                                      onChange={(event) =>
-                                        updateScore(
-                                          category.name,
-                                          Number(
-                                            event.target.value
-                                          )
-                                        )
-                                      }
-                                      className="w-full accent-emerald-500"
-                                    />
-
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${scoreBand.className}`}
-                                      >
+                                  <div className="mt-4 w-full space-y-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${scoreBand.className}`}>
                                         {scoreBand.label}
-                                      </div>
-
-                                      <div
-                                        className={`w-14 rounded-lg border px-2 py-2 text-center text-sm font-semibold ${scoreBand.className}`}
-                                      >
-                                        {value}
-                                      </div>
+                                      </span>
+                                      <span className={`rounded-lg border px-3 py-1 text-sm font-semibold ${scoreBand.className}`}>
+                                        {value} / {category.max}
+                                      </span>
+                                      <span className="text-xs text-slate-500">
+                                        Select only indicators supported by evidence.
+                                      </span>
                                     </div>
+
+                                    <div className="space-y-2">
+                                      {(riskChecklistCriteria[category.name] ?? []).map((item) => {
+                                        const selected = riskChecklistSelections[category.name] ?? [];
+
+                                        return (
+                                          <label
+                                            key={item.id}
+                                            className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 hover:border-emerald-500/40"
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={selected.includes(item.id)}
+                                              onChange={(event) =>
+                                                toggleRiskChecklistItem(
+                                                  category.name,
+                                                  item.id,
+                                                  event.target.checked
+                                                )
+                                              }
+                                              className="mt-1 h-4 w-4 shrink-0 accent-emerald-500"
+                                            />
+                                            <span className="flex-1 text-xs leading-5 text-slate-300">
+                                              {item.label}
+                                            </span>
+                                            <span className="shrink-0 text-xs font-semibold text-amber-400">
+                                              +{item.points}
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+
+                                    <p className="text-[11px] leading-5 text-slate-500">
+                                      Unchecked indicators are not confirmed findings. A zero score does not establish that a project is safe.
+                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -5476,6 +6412,46 @@ if (!isAllowedTransition) {
                         </div>
                       </div>
 
+                      {/* Promoter Identity & Affiliation Verification */}
+                      <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                        <h3 className="text-sm font-semibold">
+                          Identity &amp; Affiliation Verification
+                        </h3>
+
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          Record which verification checks have been completed.
+                          A checked item records a completed check; it does not
+                          by itself establish wrongdoing.
+                        </p>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {(promoterVerificationChecklist["Identity & Affiliation"] ?? []).map(
+                            (item) => (
+                              <label
+                                key={item.id}
+                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-3 text-sm text-slate-300"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={(
+                                    promoterChecklistSelections["Identity & Affiliation"] ?? []
+                                  ).includes(item.id)}
+                                  onChange={(event) =>
+                                    togglePromoterChecklistItem(
+                                      "Identity & Affiliation",
+                                      item.id,
+                                      event.target.checked
+                                    )
+                                  }
+                                  className="mt-1 accent-emerald-500"
+                                />
+                                <span>{item.label}</span>
+                              </label>
+                            )
+                          )}
+                        </div>
+                      </div>
+
                       {/* Promoter Risk Categories */}
                       <div>
                         <div className="mb-3 flex items-center justify-between">
@@ -5528,23 +6504,8 @@ if (!isAllowedTransition) {
                                     </p>
                                   </div>
 
-                                  <div className="flex min-w-[220px] items-center gap-3">
-                                    <input
-                                      type="range"
-                                      min="0"
-                                      max={category.max}
-                                      value={value ?? 0}
-                                      onChange={(event) =>
-                                        updatePromoterScore(
-                                          category.name,
-                                          Number(
-                                            event.target.value
-                                          )
-                                        )
-                                      }
-                                      className="w-full accent-orange-500"
-                                    />
 
+                                  <div className="flex min-w-[220px] items-center justify-end gap-3">
                                     <div className="flex items-center gap-2">
                                       <div
                                         className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${scoreBand.className}`}
@@ -5556,9 +6517,59 @@ if (!isAllowedTransition) {
                                         className={`w-14 rounded-lg border px-2 py-2 text-center text-sm font-semibold ${scoreBand.className}`}
                                       >
                                         {value}
+                                        <span className="text-xs font-normal text-slate-500">
+                                          /{category.max}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
+                                    {(promoterRiskIndicatorCriteria[category.name] ?? []).length > 0 && (
+                                      <div className="mt-4 border-t border-orange-500/20 pt-4">
+                                        <h5 className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-400">
+                                          Evidence-Based Risk Indicators
+                                        </h5>
+
+                                        <p className="mb-3 text-xs leading-5 text-slate-500">
+                                          Select an indicator only when supported by documented evidence.
+                                          Selected indicators automatically contribute to this category's risk score.
+                                        </p>
+
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                          {(promoterRiskIndicatorCriteria[category.name] ?? []).map(
+                                            (item) => (
+                                              <label
+                                                key={item.id}
+                                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-3 text-sm text-slate-300"
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={(
+                                                    promoterRiskIndicatorSelections[category.name] ?? []
+                                                  ).includes(item.id)}
+                                                  onChange={(event) =>
+                                                    togglePromoterRiskIndicator(
+                                                      category.name,
+                                                      item.id,
+                                                      event.target.checked
+                                                    )
+                                                  }
+                                                  className="mt-1 accent-orange-500"
+                                                />
+
+                                                <span className="flex-1">
+                                                  {item.label}
+                                                </span>
+
+                                                <span className="shrink-0 text-xs font-semibold text-orange-400">
+                                                  +{item.points}
+                                                </span>
+                                              </label>
+                                            )
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
                                 </div>
                               </div>
                             );
@@ -5762,7 +6773,7 @@ if (!isAllowedTransition) {
                           >
                             {savingPromoterAssessment
                               ? "Saving Promoter Assessment..."
-                              : "Save Promoter Assessment — Next Step"}
+                              : "Save Promoter Assessment - Next Step"}
                           </button>
                         )}
                       </div>
@@ -5790,8 +6801,3 @@ if (!isAllowedTransition) {
   </main>
   );
 }
-
-
-
-
-

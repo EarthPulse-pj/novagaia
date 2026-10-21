@@ -36,6 +36,7 @@ export default function ReportThreat() {
     const report = {
       threatType: formData.get("threatType"),
       project: formData.get("project"),
+      contractAddress: formData.get("contractAddress"),
       evidence: formData.get("evidence"),
       description: formData.get("description"),
       contact: formData.get("contact"),
@@ -253,6 +254,23 @@ export default function ReportThreat() {
                   />
                 </div>
 
+                <div>
+                  <label
+                    htmlFor="contract-address"
+                    className="mb-2 block text-sm font-bold text-gray-200"
+                  >
+                    Contract / Token Address (Optional)
+                  </label>
+
+                  <input
+                    id="contract-address"
+                    name="contractAddress"
+                    type="text"
+                    placeholder="Paste the token mint or contract address"
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-gray-200 placeholder:text-gray-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
                 <div>
                   <label
                     htmlFor="evidence"

@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       on_chain_behavior,
 
       assessment_notes,
+      verification_checklist,
     } = body;
 
     if (!case_id) {
@@ -49,31 +50,68 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("blacklist_risk_assessments")
-      .insert({
-        case_id,
-        overall_score,
-        risk_band: risk_band?.toLowerCase(),
+        const assessmentPayload = {
+      case_id,
+      overall_score,
+      risk_band: risk_band?.toLowerCase(),
 
-        // Locked V1.0 category fields
-        contract_token_controls,
-        holder_distribution,
-        liquidity_exit_risk,
-        team_transparency,
-        website_infrastructure,
-        marketing_promotion,
-        community_behavior,
-        on_chain_behavior,
+      // Locked V1.0 category fields
+      contract_token_controls,
+      holder_distribution,
+      liquidity_exit_risk,
+      team_transparency,
+      website_infrastructure,
+      marketing_promotion,
+      community_behavior,
+      on_chain_behavior,
 
-        assessment_notes,
+      assessment_notes,
+      verification_checklist:
+        verification_checklist && typeof verification_checklist === "object"
+          && !Array.isArray(verification_checklist)
+          ? verification_checklist
+          : {},
 
-        // Existing authentication tracking
-        assessed_by: userData.user.id,
-        assessed_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      // Existing authentication tracking
+      assessed_by: userData.user.id,
+      assessed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: existingAssessment, error: lookupError } =
+      await supabaseAdmin
+        .from("blacklist_risk_assessments")
+        .select("id")
+        .eq("case_id", case_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (lookupError) {
+      console.error("Risk assessment lookup error:", lookupError);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to check existing risk assessment.",
+          details: lookupError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = existingAssessment
+      ? await supabaseAdmin
+          .from("blacklist_risk_assessments")
+          .update(assessmentPayload)
+          .eq("id", existingAssessment.id)
+          .select()
+          .single()
+      : await supabaseAdmin
+          .from("blacklist_risk_assessments")
+          .insert(assessmentPayload)
+          .select()
+          .single();
 
     if (error) {
       console.error("Risk assessment save error:", error);

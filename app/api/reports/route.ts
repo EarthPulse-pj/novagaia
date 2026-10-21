@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       evidence,
       description,
       contact,
+      contractAddress,
     } = body;
 
     // Validate required fields
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         evidence: evidence?.trim() || null,
         description: description.trim(),
         contact: contact?.trim() || null,
+        contract_address: contractAddress?.trim() || null,
       });
 
     if (error) {
@@ -93,7 +95,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from("threat_reports")
       .select(
-    "id, created_at, report_number, threat_type, project, evidence, description, contact, status"
+    "id, created_at, report_number, threat_type, project, contract_address, evidence, description, contact, status"
     )
       .order("created_at", { ascending: false });
 
