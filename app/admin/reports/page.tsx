@@ -24,6 +24,15 @@ type ThreatReport = {
   status: ReportStatus;
 };
 
+type ReportAttachment = {
+  id: string;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  created_at: string;
+  url: string;
+};
+
 const REPORT_STATUSES: ReportStatus[] = [
   "NEW",
   "UNDER REVIEW",
@@ -50,6 +59,11 @@ export default function AdminReportsPage() {
 
   const [selectedReport, setSelectedReport] =
     useState<ThreatReport | null>(null);
+
+  const [reportAttachments, setReportAttachments] =
+    useState<ReportAttachment[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [attachmentsError, setAttachmentsError] = useState("");
 
   const filteredReports = reports.filter((report) => {
     const search = searchTerm.toLowerCase().trim();
@@ -177,12 +191,48 @@ export default function AdminReportsPage() {
     router.refresh();
   }
 
+  async function loadReportAttachments(reportId: string) {
+    setReportAttachments([]);
+    setAttachmentsError("");
+    setAttachmentsLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/reports/${encodeURIComponent(reportId)}/attachments`,
+        { cache: "no-store" }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Failed to load uploaded evidence."
+        );
+      }
+
+      setReportAttachments(result.attachments ?? []);
+    } catch (err) {
+      console.error("Failed to load report attachments:", err);
+      setAttachmentsError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load uploaded evidence."
+      );
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  }
+
   function openReportDetails(report: ThreatReport) {
     setSelectedReport(report);
+    void loadReportAttachments(report.id);
   }
 
   function closeReportDetails() {
     setSelectedReport(null);
+    setReportAttachments([]);
+    setAttachmentsError("");
+    setAttachmentsLoading(false);
   }
 
   return (
@@ -538,7 +588,7 @@ export default function AdminReportsPage() {
                   Evidence
                 </p>
 
-                {selectedReport.evidence ? (
+                {selectedReport.evidence && (
                   <a
                     href={selectedReport.evidence}
                     target="_blank"
@@ -547,11 +597,67 @@ export default function AdminReportsPage() {
                   >
                     {selectedReport.evidence}
                   </a>
-                ) : (
-                  <p className="mt-3 text-sm text-gray-500">
-                    No evidence provided.
+                )}
+
+                {attachmentsLoading && (
+                  <p className="mt-3 text-sm text-gray-400">
+                    Loading uploaded evidence...
                   </p>
                 )}
+
+                {attachmentsError && (
+                  <p className="mt-3 text-sm text-red-400">
+                    Unable to load uploaded evidence: {attachmentsError}
+                  </p>
+                )}
+
+                {!attachmentsLoading &&
+                  !attachmentsError &&
+                  reportAttachments.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Uploaded Files ({reportAttachments.length})
+                      </p>
+
+                      {reportAttachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="rounded-md border border-gray-800 p-3"
+                        >
+                          <a
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="break-all text-sm text-blue-400 underline hover:text-blue-300"
+                          >
+                            {attachment.file_name}
+                          </a>
+
+                          <p className="mt-1 text-xs text-gray-500">
+                            {attachment.mime_type || "Unknown file type"}
+                            {" · "}
+                            {(attachment.file_size / 1024).toFixed(1)} KB
+                          </p>
+
+                          <p className="mt-1 text-xs text-gray-500">
+                            Uploaded:{" "}
+                            {new Date(
+                              attachment.created_at
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                {!selectedReport.evidence &&
+                  !attachmentsLoading &&
+                  !attachmentsError &&
+                  reportAttachments.length === 0 && (
+                    <p className="mt-3 text-sm text-gray-500">
+                      No evidence files attached to this report.
+                    </p>
+                  )}
               </div>
 
               <div className="rounded-lg border border-gray-800 bg-black p-4">

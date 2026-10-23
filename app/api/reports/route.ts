@@ -1,6 +1,5 @@
 
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { isAdmin } from "@/lib/admin-auth";
 
@@ -15,10 +14,16 @@ export async function POST(request: Request) {
       description,
       contact,
       contractAddress,
-    } = body;
+    } = body ?? {};
 
-    // Validate required fields
-    if (!threatType || !project || !description) {
+    if (
+      typeof threatType !== "string" ||
+      typeof project !== "string" ||
+      typeof description !== "string" ||
+      !threatType.trim() ||
+      !project.trim() ||
+      !description.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -28,20 +33,34 @@ export async function POST(request: Request) {
       );
     }
 
-    // Save the report to Supabase
-    // The database automatically generates report_number.
-    const { error } = await supabase
+    if (
+      (evidence != null && typeof evidence !== "string") ||
+      (contact != null && typeof contact !== "string") ||
+      (contractAddress != null && typeof contractAddress !== "string")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid report field format.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
       .from("threat_reports")
       .insert({
-        threat_type: threatType,
+        threat_type: threatType.trim(),
         project: project.trim(),
         evidence: evidence?.trim() || null,
         description: description.trim(),
         contact: contact?.trim() || null,
         contract_address: contractAddress?.trim() || null,
-      });
+      })
+      .select("id, report_number")
+      .single();
 
-    if (error) {
+    if (error || !data) {
       console.error("Supabase threat report error:", error);
 
       return NextResponse.json(
@@ -57,10 +76,13 @@ export async function POST(request: Request) {
       {
         success: true,
         message: "Threat report submitted successfully.",
+        report: {
+          id: data.id,
+          report_number: data.report_number,
+        },
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error("Threat report API error:", error);
 

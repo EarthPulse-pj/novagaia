@@ -10,6 +10,7 @@ type PublicCase = {
   category: string;
   description: string | null;
   contractAddress: string | null;
+  evidence: string | null;
   caseDate: string;
   status: string;
   workflowStage: string;
@@ -478,6 +479,28 @@ export default function CaseOverviewPage() {
                             <p className="mt-1 break-all font-mono text-sm text-slate-200">
                               {item.contractAddress}
                             </p>
+                          </div>
+                        )}
+
+                        {item.evidence && (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              Submitted Evidence
+                            </p>
+                            <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm leading-6 text-slate-300 whitespace-pre-wrap break-words">
+                              {/^https?:\/\/\S+$/i.test(item.evidence.trim()) ? (
+                                <a
+                                  href={item.evidence.trim()}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-cyan-400 underline hover:text-cyan-300"
+                                >
+                                  {item.evidence.trim()}
+                                </a>
+                              ) : (
+                                item.evidence
+                              )}
+                            </div>
                           </div>
                         )}
 

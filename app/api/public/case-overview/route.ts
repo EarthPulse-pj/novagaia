@@ -86,10 +86,12 @@ export async function GET() {
 
     const descriptionByReportId: Record<string, string | null> = {};
 
+    const evidenceByReportId: Record<string, string | null> = {};
+
     if (reportIds.length > 0) {
       const { data: reports, error: reportsError } = await supabaseAdmin
         .from("threat_reports")
-        .select("id, contract_address, description")
+        .select("id, contract_address, description, evidence")
         .in("id", reportIds);
 
       if (reportsError) {
@@ -106,6 +108,9 @@ export async function GET() {
 
         descriptionByReportId[report.id] =
           report.description ?? null;
+
+        evidenceByReportId[report.id] =
+          report.evidence ?? null;
       }
     }
 
@@ -169,6 +174,9 @@ export async function GET() {
           : null,
         contractAddress: item.report_id
           ? contractAddressByReportId[item.report_id] ?? null
+          : null,
+        evidence: item.report_id
+          ? evidenceByReportId[item.report_id] ?? null
           : null,
         caseDate: item.created_at,
         status:

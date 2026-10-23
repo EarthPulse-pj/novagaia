@@ -3375,11 +3375,22 @@ function resetPromoterAssessment() {
                 )}
 
                 {report.evidence && (
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 break-all text-xs text-slate-500">
                     Evidence:{" "}
-                    <span className="text-slate-400">
-                      {report.evidence}
-                    </span>
+                    {/^https?:\/\/\S+$/i.test(report.evidence.trim()) ? (
+                      <a
+                        href={report.evidence.trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-400 underline hover:text-sky-300"
+                      >
+                        {report.evidence}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">
+                        {report.evidence}
+                      </span>
+                    )}
                   </p>
                 )}
 

@@ -3,6 +3,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const threatTypes = [
   "Scam / Fraud",
@@ -19,6 +20,8 @@ export default function ReportThreat() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [reportNumber, setReportNumber] = useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [attachmentWarning, setAttachmentWarning] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,6 +32,7 @@ export default function ReportThreat() {
 
     setIsSubmitting(true);
     setErrorMessage("");
+    setAttachmentWarning("");
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -42,7 +46,41 @@ export default function ReportThreat() {
       contact: formData.get("contact"),
     };
 
+    const allowedTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+      "text/plain",
+      "text/csv",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ]);
+
     try {
+      if (selectedFiles.length > 5) {
+        throw new Error("Please select no more than five attachments.");
+      }
+
+      for (const file of selectedFiles) {
+        if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+          throw new Error(
+            `"${file.name}" is empty or exceeds the 10 MiB file limit.`
+          );
+        }
+
+        if (!allowedTypes.has(file.type)) {
+          throw new Error(
+            `"${file.name}" has an unsupported file type. Please choose an image or supported document.`
+          );
+        }
+      }
+
       const response = await fetch("/api/reports", {
         method: "POST",
         headers: {
@@ -55,15 +93,105 @@ export default function ReportThreat() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Unable to submit the threat report."
+          data.error || data.message || "Unable to submit the threat report."
         );
       }
 
-      // Save the generated report number returned by the API
+      const savedReportId: string | undefined = data.report?.id;
       setReportNumber(data.report?.report_number ?? null);
+
+      const failedFiles: string[] = [];
+
+      if (selectedFiles.length > 0 && !savedReportId) {
+        failedFiles.push(...selectedFiles.map((file) => file.name));
+        console.error(
+          "Report was saved, but the API did not return its report ID."
+        );
+      } else if (savedReportId) {
+        for (const file of selectedFiles) {
+          try {
+            const urlResponse = await fetch("/api/reports/upload-url", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                reportId: savedReportId,
+                fileName: file.name,
+                mimeType: file.type,
+                fileSize: file.size,
+              }),
+            });
+
+            const uploadData = await urlResponse.json();
+
+            if (!urlResponse.ok || !uploadData.success) {
+              throw new Error(
+                uploadData.error || "Could not prepare the upload."
+              );
+            }
+
+            const { error: storageUploadError } =
+              await supabaseBrowser.storage
+                .from("threat-report-evidence")
+                .uploadToSignedUrl(
+                  uploadData.path,
+                  uploadData.token,
+                  file,
+                  {
+                    contentType: file.type,
+                    upsert: false,
+                  }
+                );
+
+            if (storageUploadError) {
+              throw storageUploadError;
+            }
+
+            const registrationResponse = await fetch(
+              "/api/reports/attachments",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  reportId: savedReportId,
+                  path: uploadData.path,
+                  fileName: file.name,
+                  mimeType: file.type,
+                  fileSize: file.size,
+                }),
+              }
+            );
+
+            const registrationData = await registrationResponse.json();
+
+            if (!registrationResponse.ok || !registrationData.success) {
+              throw new Error(
+                registrationData.error ||
+                  "The uploaded file could not be registered."
+              );
+            }
+          } catch (uploadError) {
+            console.error(
+              `Attachment upload failed for "${file.name}":`,
+              uploadError
+            );
+            failedFiles.push(file.name);
+          }
+        }
+      }
+
+      if (failedFiles.length > 0) {
+        setAttachmentWarning(
+          `Your report was submitted successfully, but ${failedFiles.length} attachment(s) could not be fully uploaded: ${failedFiles.join(", ")}. Please keep your report number and contact NovaGaia to provide the missing evidence.`
+        );
+      }
 
       setSubmitted(true);
       form.reset();
+      setSelectedFiles([]);
     } catch (error) {
       console.error("Report submission error:", error);
 
@@ -76,7 +204,6 @@ export default function ReportThreat() {
       setIsSubmitting(false);
     }
   }
-
   function handleAnotherReport() {
     setSubmitted(false);
     setErrorMessage("");
@@ -135,7 +262,7 @@ export default function ReportThreat() {
 
             <div className="mt-8 space-y-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="font-bold text-cyan-300">01 — Observe</p>
+                <p className="font-bold text-cyan-300">01 Observe</p>
 
                 <p className="mt-2 text-sm leading-6 text-gray-400">
                   Identify the suspicious activity or claim before reporting
@@ -144,7 +271,7 @@ export default function ReportThreat() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="font-bold text-cyan-300">02 — Document</p>
+                <p className="font-bold text-cyan-300">02 Document</p>
 
                 <p className="mt-2 text-sm leading-6 text-gray-400">
                   Collect relevant links, wallet addresses, screenshots,
@@ -153,7 +280,7 @@ export default function ReportThreat() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="font-bold text-cyan-300">03 — Report</p>
+                <p className="font-bold text-cyan-300">03 Report</p>
 
                 <p className="mt-2 text-sm leading-6 text-gray-400">
                   Submit the information so it can be reviewed and
@@ -185,6 +312,27 @@ export default function ReportThreat() {
           >
             {!submitted ? (
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Temporary evidence upload notice */}
+                <div
+                  role="status"
+                  className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5"
+                >
+                  <h3 className="font-bold text-amber-300">
+                    Evidence File Uploads — Under Maintenance
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-gray-300">
+                    File uploads are currently being updated and will be available soon.
+                    In the meantime, you can still submit your threat report using
+                    URL-based evidence. Please provide links to relevant websites,
+                    transactions, social media posts, or other publicly accessible
+                    information in the Evidence / Link field below.
+                  </p>
+                  <p className="mt-2 text-sm text-gray-400">
+                    Thank you for your patience and for helping keep the NovaGaia
+                    community safe.
+                  </p>
+                </div>
+
                 {/* Visible error message */}
                 {errorMessage && (
                   <div
@@ -291,6 +439,48 @@ export default function ReportThreat() {
 
                 <div>
                   <label
+                    htmlFor="evidence-files"
+                    className="mb-2 block text-sm font-bold text-gray-200"
+                  >
+                    Upload Evidence (Optional)
+                  </label>
+
+                  <input
+                    id="evidence-files"
+                    name="evidenceFiles"
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                    disabled={isSubmitting}
+                    onChange={(event) => {
+                      const files = Array.from(event.currentTarget.files ?? []);
+                      setSelectedFiles(files);
+                      setErrorMessage("");
+                    }}
+                    className="w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-gray-200 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-4 file:py-2 file:font-bold file:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+
+                  <p className="mt-2 text-xs leading-5 text-gray-500">
+                    Select up to 5 images or documents. Maximum 10 MiB per file.
+                    Evidence files are stored privately.
+                  </p>
+
+                  {selectedFiles.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {selectedFiles.map((file, index) => (
+                        <li
+                          key={`${file.name}-${file.lastModified}-${index}`}
+                          className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-gray-300"
+                        >
+                          {file.name} — {(file.size / (1024 * 1024)).toFixed(2)} MiB
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <label
                     htmlFor="description"
                     className="mb-2 block text-sm font-bold text-gray-200"
                   >
@@ -370,7 +560,7 @@ export default function ReportThreat() {
                 </div>
 
                 <div className="mt-8 flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-4xl">
-                  ✓
+                  🚨
                 </div>
 
                 <h3 className="mt-6 text-3xl font-black text-white">
