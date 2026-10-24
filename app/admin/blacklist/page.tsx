@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
@@ -1078,25 +1078,6 @@ const buildCaseOverviewText = async (): Promise<string> => {
 
       return Array.isArray(savedItems) && savedItems.includes(itemId);
     };
-
-    lines.push("", "PROMOTER VERIFICATION CHECKLISTS");
-
-    for (const [category, items] of Object.entries(
-      promoterVerificationChecklist
-    )) {
-      lines.push("", category);
-
-      for (const item of items) {
-        const checked = isVerificationItemChecked(
-          category,
-          item.id
-        );
-
-        lines.push(
-          `${checked ? "[X]" : "[ ]"} ${item.label}`
-        );
-      }
-    }
 
 const isRiskIndicatorChecked = (
       category: string,
