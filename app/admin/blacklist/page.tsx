@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
@@ -293,88 +293,88 @@ type PromoterRiskCategory = {
 
 const promoterRiskCategories: PromoterRiskCategory[] = [
   {
-    name: "Promotion History",
+    name: "Identity & Representation Integrity",
     description:
-      "Documented history of promoting projects or campaigns associated with significant problems.",
+      "Investigates who the promoter claims to be and whether their identity, credentials and affiliations are accurately represented.",
     max: 15,
     scoringGuide:
-      "0-2: No concerning history identified. " +
-      "3-5: One or more questionable promotions with limited evidence of serious problems. " +
-      "6-8: Multiple questionable promotions or recurring concerns. " +
-      "9-11: Several promotions connected to serious misconduct or substantial unresolved concerns. " +
-      "12-15: Strong documented pattern involving multiple projects associated with serious misconduct.",
+      "0-2: Identity and material representations are reasonably supported. " +
+      "3-5: Limited discrepancies require clarification. " +
+      "6-8: Substantial identity or credential claims remain unsupported. " +
+      "9-11: Multiple material representations conflict with reliable evidence. " +
+      "12-15: Strong evidence of serious, repeated identity or representation deception.",
   },
   {
-    name: "Project Due Diligence",
+    name: "Professional Conduct & Track Record",
     description:
-      "Apparent level of verification performed before promoting a project or campaign.",
+      "Examines the promoter's documented actions and recurring conduct, rather than treating unsuccessful projects as proof of wrongdoing.",
     max: 15,
     scoringGuide:
-      "0-2: Reasonable verification is documented. " +
-      "3-5: Some verification but important gaps remain. " +
-      "6-8: Limited due diligence with significant unchecked information. " +
-      "9-11: Repeated promotion despite obvious unresolved warning signs. " +
-      "12-15: Strong evidence of repeatedly disregarding substantial and readily identifiable warning indicators.",
+      "0-2: No substantiated material conduct concerns identified. " +
+      "3-5: Limited documented concerns. " +
+      "6-8: Multiple substantiated concerns or repeated failures to address them. " +
+      "9-11: Serious recurring concerns supported by reliable records. " +
+      "12-15: Strong evidence of a repeated, serious pattern across independent records.",
   },
   {
-    name: "Misleading Claims",
+    name: "Truthfulness & Credibility",
     description:
-      "False, exaggerated, unverifiable, or materially misleading promotional statements.",
+      "Assesses the accuracy and verifiability of statements made by the individual.",
     max: 15,
     scoringGuide:
-      "0-2: Claims appear appropriately supported and qualified. " +
-      "3-5: Minor exaggeration or weakly supported claims. " +
-      "6-8: Multiple unsupported or substantially exaggerated claims. " +
-      "9-11: Repeated materially misleading claims. " +
-      "12-15: Strong documented pattern of materially false or deceptive promotional claims.",
+      "0-2: Material claims are reasonably supported. " +
+      "3-5: Limited unsupported or inaccurate claims. " +
+      "6-8: Multiple material claims conflict with reliable evidence. " +
+      "9-11: Repeated material misrepresentations despite opportunities to correct them. " +
+      "12-15: Strong evidence of repeated, serious material deception.",
   },
   {
-    name: "Transparency & Disclosure",
+    name: "Transparency & Conflicts of Interest",
     description:
-      "Disclosure of sponsorships, payments, token allocations, affiliate relationships, and other material incentives.",
+      "Investigates whether the promoter is transparent about relevant relationships and interests.",
     max: 10,
     scoringGuide:
-      "0-1: Relevant relationships are clearly disclosed. " +
-      "2-3: Minor disclosure gaps. " +
-      "4-5: Important promotional relationships are inconsistently disclosed. " +
-      "6-8: Repeated failure to disclose material relationships. " +
-      "9-10: Strong evidence of concealed or deceptive material relationships.",
+      "0-1: Relevant relationships are adequately disclosed. " +
+      "2-3: Limited disclosure gaps. " +
+      "4-5: Material relationships are inconsistently disclosed. " +
+      "6-8: Repeated material omissions supported by evidence. " +
+      "9-10: Strong evidence of serious concealment or deceptive disclosure.",
   },
   {
-    name: "Promotion Pattern",
+    name: "Financial Integrity & Incentive Conduct",
     description:
-      "Recurring patterns of promoting questionable projects or campaigns.",
+      "Focuses on the individual's documented handling and representation of promotional compensation.",
     max: 10,
     scoringGuide:
-      "0-1: No concerning pattern. " +
-      "2-3: Isolated questionable promotion. " +
-      "4-5: Several questionable promotions with common characteristics. " +
-      "6-8: Repeated promotion of projects displaying similar warning signs. " +
-      "9-10: Strong recurring pattern despite repeated warning indicators or previous negative outcomes.",
+      "0-1: No substantiated material concern. " +
+      "2-3: Limited discrepancy requiring clarification. " +
+      "4-5: Material incentive terms or payments are inadequately represented. " +
+      "6-8: Repeated evidence-supported financial misrepresentation. " +
+      "9-10: Strong evidence of serious, deceptive financial conduct.",
   },
   {
-    name: "Financial Incentives",
+    name: "Community Conduct & Audience Treatment",
     description:
-      "Whether financial or token incentives appear connected to promotional behavior in a concerning way.",
+      "Examines the individual's documented treatment of audiences, critics and community members.",
     max: 10,
     scoringGuide:
-      "0-1: No significant incentive concern. " +
-      "2-3: Incentives exist and appear appropriately disclosed. " +
-      "4-5: Significant incentives with incomplete disclosure. " +
-      "6-8: Strong evidence that substantial incentives influenced promotion without adequate transparency. " +
-      "9-10: Strong documented evidence of concealed or deceptive incentive arrangements.",
+      "0-1: No substantiated material concern. " +
+      "2-3: Limited documented inappropriate conduct. " +
+      "4-5: Repeated hostile, coercive, or deceptive interactions. " +
+      "6-8: Serious evidence-supported intimidation or manipulation. " +
+      "9-10: Strong evidence of systematic abusive or deceptive conduct.",
   },
   {
-    name: "Community Conduct",
+    name: "Accountability, Corrections & Cooperation",
     description:
-      "Documented behavior toward audiences and communities during promotion or investigation.",
+      "Assesses the promoter's documented response when credible concerns or errors are brought to their attention.",
     max: 10,
     scoringGuide:
-      "0-1: No significant concern. " +
-      "2-3: Occasional inappropriate behavior without a clear pattern. " +
-      "4-5: Repeated hostile, manipulative, or misleading interactions. " +
-      "6-8: Documented manipulation, intimidation, deceptive engagement, or targeted pressure. " +
-      "9-10: Strong evidence of systematic manipulation, intimidation, or deceptive recruitment.",
+      "0-1: Material concerns are addressed appropriately. " +
+      "2-3: Limited unresolved issues after reasonable opportunities to respond. " +
+      "4-5: Repeated failures to correct or resolve substantiated material concerns. " +
+      "6-8: Serious recurring failures of accountability supported by evidence. " +
+      "9-10: Strong evidence of repeated, serious disregard of documented commitments or corrective opportunities.",
   },
 ];
 
@@ -382,60 +382,165 @@ const promoterRiskIndicatorCriteria: Record<
   string,
   { id: string; label: string; points: number }[]
 > = {
-  "Promotion History": [
-    { id: "prior_failures", label: "Previous promoted projects have documented serious failures", points: 3 },
-    { id: "repeat_concerns", label: "Multiple previous promotions have substantiated material concerns", points: 3 },
-    { id: "ignored_warnings", label: "Promotion continued after credible, evidence-supported warnings", points: 3 },
-    { id: "unresolved_projects", label: "Repeated promotion of projects with unresolved serious concerns", points: 3 },
-    { id: "past_claims", label: "Material claims about previous promotions conflict with documented facts", points: 3 },
+  "Identity & Representation Integrity": [
+    {
+      id: "verified_impersonation",
+      label: "Verified impersonation or deceptive identity claims",
+      points: 4,
+    },
+    {
+      id: "false_credentials",
+      label: "Materially false professional credentials or claimed experience",
+      points: 4,
+    },
+    {
+      id: "false_authority",
+      label: "False claims of official status, authority, or affiliation",
+      points: 4,
+    },
+    {
+      id: "misleading_identity_pattern",
+      label: "Documented use of misleading identities in promotional activity",
+      points: 3,
+    },
   ],
 
-  "Project Due Diligence": [
-    { id: "contract_unchecked", label: "Promoted token or contract was not independently verified", points: 3 },
-    { id: "team_unverified", label: "Material team, partnership, or affiliation claims were not verified", points: 3 },
-    { id: "warnings_overlooked", label: "Significant, readily identifiable warning signs were overlooked", points: 3 },
-    { id: "safety_unsubstantiated", label: "Safety claims lacked supporting contract, liquidity, or tokenomics checks", points: 3 },
-    { id: "discrepancies_ignored", label: "Promotion continued despite unresolved material discrepancies", points: 3 },
+  "Professional Conduct & Track Record": [
+    {
+      id: "prior_campaign_misconduct",
+      label: "Repeated substantiated misconduct in previous campaigns",
+      points: 4,
+    },
+    {
+      id: "failure_correct_errors",
+      label: "Documented failure to correct material promotional errors",
+      points: 4,
+    },
+    {
+      id: "ignored_credible_concerns",
+      label: "Repeated disregard of credible, evidence-supported concerns",
+      points: 4,
+    },
+    {
+      id: "independent_conduct_records",
+      label: "A pattern of conduct supported by multiple independent records",
+      points: 3,
+    },
   ],
 
-  "Misleading Claims": [
-    { id: "guaranteed_returns", label: "Documented guaranteed-profit or risk-free investment claims", points: 3 },
-    { id: "false_partnership", label: "Material partnership or endorsement claims were contradicted by evidence", points: 3 },
-    { id: "unsupported_performance", label: "Material performance or price claims lacked adequate support", points: 3 },
-    { id: "false_urgency", label: "Promotional statements materially misrepresented deadlines or scarcity", points: 3 },
-    { id: "repeated_false_claims", label: "Repeated material claims remained false or misleading after correction opportunities", points: 3 },
+  "Truthfulness & Credibility": [
+    {
+      id: "claims_contradicted",
+      label: "Material claims contradicted by reliable evidence",
+      points: 4,
+    },
+    {
+      id: "fabricated_endorsement",
+      label: "Fabricated or materially misrepresented endorsements or credentials",
+      points: 4,
+    },
+    {
+      id: "unsupported_guarantees",
+      label: "Unsupported guarantees of profit, safety, or investment returns",
+      points: 4,
+    },
+    {
+      id: "repeated_misrepresentation",
+      label: "Repeated material misrepresentations after opportunities to correct them",
+      points: 3,
+    },
   ],
 
-  "Transparency & Disclosure": [
-    { id: "undisclosed_payment", label: "Evidence supports an undisclosed payment for promotion", points: 2 },
-    { id: "undisclosed_tokens", label: "Material token holdings or allocations were not adequately disclosed", points: 2 },
-    { id: "hidden_affiliation", label: "A material project affiliation or conflict of interest was concealed", points: 2 },
-    { id: "affiliate_omission", label: "Material referral or affiliate incentives were not disclosed", points: 2 },
-    { id: "misleading_disclosure", label: "Disclosures materially contradicted available evidence", points: 2 },
+  "Transparency & Conflicts of Interest": [
+    {
+      id: "undisclosed_sponsorship",
+      label: "Undisclosed paid promotions or sponsorships",
+      points: 3,
+    },
+    {
+      id: "undisclosed_holdings",
+      label: "Material token holdings or project affiliations not adequately disclosed",
+      points: 3,
+    },
+    {
+      id: "undisclosed_referrals",
+      label: "Undisclosed referral arrangements or financial conflicts",
+      points: 2,
+    },
+    {
+      id: "conflict_statement_mismatch",
+      label: "Statements about conflicts that contradict documented evidence",
+      points: 2,
+    },
   ],
 
-  "Promotion Pattern": [
-    { id: "repeated_high_risk", label: "Repeated promotion of projects with independently documented serious concerns", points: 2 },
-    { id: "similar_claims", label: "Recurring unsupported claims across multiple promotions", points: 2 },
-    { id: "warning_recurrence", label: "Similar warning signs recur across promoted projects", points: 2 },
-    { id: "coordinated_campaigns", label: "Evidence supports coordinated promotional campaigns lacking transparency", points: 2 },
-    { id: "repeat_after_outcomes", label: "Similar promotion patterns continued after documented negative outcomes", points: 2 },
+  "Financial Integrity & Incentive Conduct": [
+    {
+      id: "misrepresented_payments",
+      label: "Material promotional payments misrepresented or concealed",
+      points: 3,
+    },
+    {
+      id: "financial_statement_conflict",
+      label: "Documented conflicts between financial arrangements and public statements",
+      points: 3,
+    },
+    {
+      id: "misrepresented_incentive_terms",
+      label: "Material incentive terms inaccurately represented",
+      points: 2,
+    },
+    {
+      id: "deceptive_compensation",
+      label: "Evidence-supported deceptive conduct concerning compensation or token allocations",
+      points: 2,
+    },
   ],
 
-  "Financial Incentives": [
-    { id: "undisclosed_compensation", label: "Evidence supports material undisclosed promotional compensation", points: 2 },
-    { id: "token_payment", label: "Token payments or allocations connected to promotion were inadequately disclosed", points: 2 },
-    { id: "referral_conflict", label: "Material referral commissions or incentives were not disclosed", points: 2 },
-    { id: "incentive_claim_conflict", label: "Statements about financial incentives conflict with available evidence", points: 2 },
-    { id: "concealed_arrangement", label: "Evidence supports a concealed material financial arrangement", points: 2 },
+  "Community Conduct & Audience Treatment": [
+    {
+      id: "targeted_harassment",
+      label: "Targeted harassment or intimidation connected to promotional activity",
+      points: 3,
+    },
+    {
+      id: "suppressed_legitimate_concerns",
+      label: "Deliberate suppression of legitimate concerns",
+      points: 3,
+    },
+    {
+      id: "deceptive_audience_engagement",
+      label: "Verified impersonation or deceptive audience engagement",
+      points: 2,
+    },
+    {
+      id: "coercive_recruitment",
+      label: "Coercive pressure or deceptive recruitment practices",
+      points: 2,
+    },
   ],
 
-  "Community Conduct": [
-    { id: "targeted_harassment", label: "Documented targeted harassment connected to promotional activity", points: 2 },
-    { id: "suppressed_questions", label: "Evidence supports deliberate suppression of legitimate project concerns", points: 2 },
-    { id: "impersonation", label: "Verified impersonation or deceptive identity use", points: 2 },
-    { id: "coercive_pressure", label: "Documented coercive pressure or intimidation of community members", points: 2 },
-    { id: "deceptive_engagement", label: "Evidence supports fabricated engagement or deceptive community activity", points: 2 },
+  "Accountability, Corrections & Cooperation": [
+    {
+      id: "uncorrected_material_claims",
+      label: "Material false claims left uncorrected after credible notice",
+      points: 3,
+    },
+    {
+      id: "repeated_claims_after_correction",
+      label: "Repeated misleading statements after substantiated corrections",
+      points: 3,
+    },
+    {
+      id: "obstructed_fact_finding",
+      label: "Evidence-supported attempts to misrepresent or obstruct fact-finding",
+      points: 2,
+    },
+    {
+      id: "failed_correction_commitments",
+      label: "Repeated failure to honor documented commitments to correct material disclosures",
+      points: 2,
+    },
   ],
 };
 
@@ -448,47 +553,43 @@ const promoterVerificationChecklist: Record<
   string,
   PromoterChecklistItem[]
 > = {
-  "Identity & Affiliation": [
+  "Identity & Representation Integrity": [
     { id: "identity_verified", label: "Identity independently verified" },
-    { id: "official_accounts_verified", label: "Official social accounts verified" },
-    { id: "project_affiliation_verified", label: "Claimed project affiliations independently verified" },
-    { id: "promotion_disclosures_checked", label: "Sponsorships and paid-promotion disclosures checked" },
-    { id: "independent_sources_checked", label: "Claims cross-checked against independent sources" },
+    { id: "official_accounts_verified", label: "Official accounts or communication channels independently verified" },
+    { id: "project_affiliation_verified", label: "Claimed project, business, client, or campaign affiliations independently verified" },
+    { id: "representation_claims_checked", label: "Material claims about role, authority, credentials, or representation checked" },
+    { id: "independent_sources_checked", label: "Relevant claims cross-checked against independent sources" },
   ],
-  "Promotion History": [
-    { id: "previous_promotions_reviewed", label: "Previous promotions and their outcomes reviewed" },
-    { id: "past_project_issues_checked", label: "Publicly documented issues involving previously promoted projects checked" },
-    { id: "promotion_claims_compared", label: "Past promotional claims compared with verifiable outcomes" },
+  "Professional Conduct & Track Record": [
+    { id: "previous_promotions_reviewed", label: "Relevant prior promotions, campaigns, or professional engagements reviewed" },
+    { id: "past_concerns_checked", label: "Relevant, documented concerns involving previous engagements checked" },
+    { id: "commitment_history_reviewed", label: "Available evidence of previous commitments and outcomes reviewed" },
   ],
-  "Project Due Diligence": [
-    { id: "project_identity_checked", label: "Promoted project's identity and official links checked" },
-    { id: "contract_address_checked", label: "Token or contract address independently verified" },
-    { id: "project_evidence_reviewed", label: "Project claims checked against primary evidence" },
+  "Truthfulness & Credibility": [
+    { id: "material_claims_checked", label: "Material factual claims checked against supporting evidence" },
+    { id: "guaranteed_outcomes_checked", label: "Claims of guaranteed outcomes or risk-free results reviewed where relevant" },
+    { id: "corrections_and_edits_reviewed", label: "Relevant corrections, edited statements, and deleted claims documented where available" },
   ],
-  "Misleading Claims": [
-    { id: "guaranteed_returns_checked", label: "Claims of guaranteed returns or risk-free profits reviewed" },
-    { id: "claims_evidence_checked", label: "Material claims checked against supporting evidence" },
-    { id: "edited_content_checked", label: "Relevant posts, edits, corrections, and deleted claims documented where available" },
-  ],
-  "Transparency & Disclosure": [
-    { id: "paid_promotion_checked", label: "Paid promotion or sponsorship disclosure checked" },
-    { id: "token_holdings_disclosed", label: "Relevant token holdings or allocations disclosed or investigated" },
+  "Transparency & Conflicts of Interest": [
+    { id: "paid_promotion_checked", label: "Relevant sponsorship, paid-promotion, or client relationship disclosures checked" },
+    { id: "interests_disclosed", label: "Relevant ownership interests or other material interests disclosed or investigated" },
     { id: "conflicts_checked", label: "Potential conflicts of interest documented" },
   ],
-  "Promotion Pattern": [
-    { id: "campaign_pattern_reviewed", label: "Promotion timing and repeated campaign patterns reviewed" },
-    { id: "coordination_evidence_checked", label: "Evidence of coordinated promotion independently checked" },
-    { id: "repeated_projects_checked", label: "Repeated promotion of projects with documented concerns reviewed" },
+  "Financial Integrity & Incentive Conduct": [
+    { id: "payment_terms_reviewed", label: "Relevant payment terms, commissions, referral rewards, or incentives reviewed" },
+    { id: "compensation_evidence_checked", label: "Available evidence of compensation or promised benefits checked" },
+    { id: "financial_disclosures_reviewed", label: "Relevant financial disclosures compared with available evidence" },
   ],
-  "Financial Incentives": [
-    { id: "referral_rewards_checked", label: "Referral links, commissions, or rewards checked" },
-    { id: "token_compensation_checked", label: "Token payments, allocations, or other compensation investigated" },
-    { id: "incentive_disclosure_checked", label: "Disclosure of relevant financial incentives reviewed" },
-  ],
-  "Community Conduct": [
-    { id: "impersonation_checked", label: "Evidence of impersonation or false identity checked" },
+  "Community Conduct & Audience Treatment": [
+    { id: "identity_misrepresentation_checked", label: "Evidence of impersonation or material misrepresentation checked" },
     { id: "question_suppression_checked", label: "Documented attempts to suppress legitimate questions reviewed" },
-    { id: "harassment_evidence_checked", label: "Relevant, documented harassment or intimidation evidence reviewed" },
+    { id: "harassment_evidence_checked", label: "Relevant, documented harassment, intimidation, or audience mistreatment reviewed" },
+  ],
+  "Accountability, Corrections & Cooperation": [
+    { id: "corrections_followup_reviewed", label: "Relevant corrections, follow-up actions, and unresolved issues reviewed" },
+    { id: "cooperation_evidence_reviewed", label: "Documented responses to reasonable requests for clarification reviewed" },
+    { id: "promotion_agreement_reviewed", label: "Available agreement terms and evidence of performance reviewed for any type of promotion, service, business, client, or campaign engagement" },
+    { id: "promotion_agreement_failure_checked", label: "Any alleged failure to honor an agreed commitment checked against the agreement, evidence, justification, and resolution" },
   ],
 };
 
@@ -962,6 +1063,38 @@ const buildCaseOverviewText = async (): Promise<string> => {
         }
       } catch {
         lines.push("Checklist note: saved checklist could not be parsed.");
+      }
+    }
+
+    const isVerificationItemChecked = (
+      category: string,
+      itemId: string
+    ): boolean => {
+      const savedItems =
+        savedChecklistObject[category] ??
+        (category === "Identity & Representation Integrity"
+          ? savedChecklistObject["Identity & Affiliation"]
+          : undefined);
+
+      return Array.isArray(savedItems) && savedItems.includes(itemId);
+    };
+
+    lines.push("", "PROMOTER VERIFICATION CHECKLISTS");
+
+    for (const [category, items] of Object.entries(
+      promoterVerificationChecklist
+    )) {
+      lines.push("", category);
+
+      for (const item of items) {
+        const checked = isVerificationItemChecked(
+          category,
+          item.id
+        );
+
+        lines.push(
+          `${checked ? "[X]" : "[ ]"} ${item.label}`
+        );
       }
     }
 
@@ -2415,10 +2548,17 @@ async function loadPromoterAssessment(caseId: string) {
 
     setPromoterChecklistSelections(
       Object.fromEntries(
-        savedChecklistEntries.filter(
-          ([category]) =>
-            !category.startsWith("__risk_indicator__:")
-        )
+        savedChecklistEntries
+          .filter(
+            ([category]) =>
+              !category.startsWith("__risk_indicator__:")
+          )
+          .map(([category, items]) => [
+            category === "Identity & Affiliation"
+              ? "Identity & Representation Integrity"
+              : category,
+            items,
+          ] as [string, string[]])
       )
     );
 
@@ -2443,32 +2583,62 @@ setPromoterRiskIndicatorSelections(
       return;
     }
 
+    const savedChecklistObject =
+      savedChecklist &&
+      typeof savedChecklist === "object" &&
+      !Array.isArray(savedChecklist)
+        ? (savedChecklist as Record<string, unknown>)
+        : {};
+
+    const isPromoterRiskV2 =
+      savedChecklistObject.__promoter_risk_version === "v2";
+
     const loadedPromoterScores: Record<string, number> = {
-      "Promotion History": assessment.promotion_history ?? 0,
-      "Project Due Diligence": assessment.project_due_diligence ?? 0,
-      "Misleading Claims": assessment.misleading_claims ?? 0,
-      "Transparency & Disclosure": assessment.transparency_disclosure ?? 0,
-      "Promotion Pattern": assessment.promotion_pattern ?? 0,
-      "Financial Incentives": assessment.financial_incentives ?? 0,
-      "Community Conduct": assessment.community_conduct ?? 0,
+      "Identity & Representation Integrity": 0,
+      "Professional Conduct & Track Record": 0,
+      "Truthfulness & Credibility": 0,
+      "Transparency & Conflicts of Interest": 0,
+      "Financial Integrity & Incentive Conduct": 0,
+      "Community Conduct & Audience Treatment": 0,
+      "Accountability, Corrections & Cooperation": 0,
       "Evidence Strength": assessment.evidence_strength ?? 0,
     };
 
-    for (const category of promoterRiskCategories) {
-      const selectedIds =
-        savedChecklistEntries.find(
-          ([key]) => key === `__risk_indicator__:${category.name}`
-        )?.[1] ?? [];
+    if (isPromoterRiskV2) {
+      const savedScoreFields: Record<string, number> = {
+        "Identity & Representation Integrity":
+          assessment.promotion_history ?? 0,
+        "Professional Conduct & Track Record":
+          assessment.project_due_diligence ?? 0,
+        "Truthfulness & Credibility":
+          assessment.misleading_claims ?? 0,
+        "Transparency & Conflicts of Interest":
+          assessment.transparency_disclosure ?? 0,
+        "Accountability, Corrections & Cooperation":
+          assessment.promotion_pattern ?? 0,
+        "Financial Integrity & Incentive Conduct":
+          assessment.financial_incentives ?? 0,
+        "Community Conduct & Audience Treatment":
+          assessment.community_conduct ?? 0,
+      };
 
-      const criteria = promoterRiskIndicatorCriteria[category.name];
+      for (const category of promoterRiskCategories) {
+        const selectedIds =
+          savedChecklistEntries.find(
+            ([key]) => key === `__risk_indicator__:${category.name}`
+          )?.[1] ?? [];
 
-      if (selectedIds.length > 0 && criteria) {
-        loadedPromoterScores[category.name] = Math.min(
-          category.max,
-          criteria
-            .filter((item) => selectedIds.includes(item.id))
-            .reduce((total, item) => total + item.points, 0)
-        );
+        const criteria = promoterRiskIndicatorCriteria[category.name];
+
+        loadedPromoterScores[category.name] =
+          selectedIds.length > 0 && criteria
+            ? Math.min(
+                category.max,
+                criteria
+                  .filter((item) => selectedIds.includes(item.id))
+                  .reduce((total, item) => total + item.points, 0)
+              )
+            : savedScoreFields[category.name] ?? 0;
       }
     }
 
@@ -2804,27 +2974,28 @@ async function savePromoterAssessment() {
         body: JSON.stringify({
           case_id: selectedCase.id,
 
-          // Promoter Risk Assessment 85 points
+          // Promoter Risk Assessment v2 — 85 points
+          // Keep existing database column names; do not change the schema.
           promotion_history:
-            promoterScores["Promotion History"] || 0,
+            promoterScores["Identity & Representation Integrity"] || 0,
 
           project_due_diligence:
-            promoterScores["Project Due Diligence"] || 0,
+            promoterScores["Professional Conduct & Track Record"] || 0,
 
           misleading_claims:
-            promoterScores["Misleading Claims"] || 0,
+            promoterScores["Truthfulness & Credibility"] || 0,
 
           transparency_disclosure:
-            promoterScores["Transparency & Disclosure"] || 0,
+            promoterScores["Transparency & Conflicts of Interest"] || 0,
 
           promotion_pattern:
-            promoterScores["Promotion Pattern"] || 0,
+            promoterScores["Accountability, Corrections & Cooperation"] || 0,
 
           financial_incentives:
-            promoterScores["Financial Incentives"] || 0,
+            promoterScores["Financial Integrity & Incentive Conduct"] || 0,
 
           community_conduct:
-            promoterScores["Community Conduct"] || 0,
+            promoterScores["Community Conduct & Audience Treatment"] || 0,
 
           promoter_risk_score:
             promoterRiskScore,
@@ -2840,6 +3011,7 @@ async function savePromoterAssessment() {
             evidenceConfidenceScore,
 
           verification_checklist: {
+            __promoter_risk_version: "v2",
             ...promoterChecklistSelections,
             ...Object.fromEntries(
               Object.entries(promoterRiskIndicatorSelections).map(
@@ -6420,46 +6592,6 @@ function resetPromoterAssessment() {
                               {evidenceConfidenceLevel.description}
                             </p>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Promoter Identity & Affiliation Verification */}
-                      <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                        <h3 className="text-sm font-semibold">
-                          Identity &amp; Affiliation Verification
-                        </h3>
-
-                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Record which verification checks have been completed.
-                          A checked item records a completed check; it does not
-                          by itself establish wrongdoing.
-                        </p>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {(promoterVerificationChecklist["Identity & Affiliation"] ?? []).map(
-                            (item) => (
-                              <label
-                                key={item.id}
-                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 p-3 text-sm text-slate-300"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    promoterChecklistSelections["Identity & Affiliation"] ?? []
-                                  ).includes(item.id)}
-                                  onChange={(event) =>
-                                    togglePromoterChecklistItem(
-                                      "Identity & Affiliation",
-                                      item.id,
-                                      event.target.checked
-                                    )
-                                  }
-                                  className="mt-1 accent-emerald-500"
-                                />
-                                <span>{item.label}</span>
-                              </label>
-                            )
-                          )}
                         </div>
                       </div>
 

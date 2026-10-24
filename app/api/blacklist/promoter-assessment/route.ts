@@ -88,7 +88,7 @@ const assessmentPayload = {
 const { data: existingAssessment, error: lookupError } =
   await supabaseAdmin
     .from("blacklist_promoter_assessments")
-    .select("id")
+    .select("*")
     .eq("case_id", case_id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -110,16 +110,72 @@ if (lookupError) {
   );
 }
 
+const existingChecklistValue = existingAssessment?.verification_checklist;
+
+const existingChecklist =
+  existingChecklistValue &&
+  typeof existingChecklistValue === "object" &&
+  !Array.isArray(existingChecklistValue)
+    ? (existingChecklistValue as Record<string, unknown>)
+    : {};
+
+const incomingChecklist =
+  verification_checklist &&
+  typeof verification_checklist === "object" &&
+  !Array.isArray(verification_checklist)
+    ? (verification_checklist as Record<string, unknown>)
+    : {};
+
+const existingIsV2 =
+  existingChecklist.__promoter_risk_version === "v2";
+
+const legacySnapshot = existingAssessment
+  ? existingIsV2
+    ? existingChecklist.__legacy_promoter_assessment_v1
+    : {
+        version: "v1",
+        captured_at: new Date().toISOString(),
+        scores: {
+          promotion_history: existingAssessment.promotion_history,
+          project_due_diligence: existingAssessment.project_due_diligence,
+          misleading_claims: existingAssessment.misleading_claims,
+          transparency_disclosure: existingAssessment.transparency_disclosure,
+          promotion_pattern: existingAssessment.promotion_pattern,
+          financial_incentives: existingAssessment.financial_incentives,
+          community_conduct: existingAssessment.community_conduct,
+          promoter_risk_score: existingAssessment.promoter_risk_score,
+          promoter_risk_band: existingAssessment.promoter_risk_band,
+          evidence_strength: existingAssessment.evidence_strength,
+          evidence_confidence_score: existingAssessment.evidence_confidence_score,
+          evidence_confidence_level: existingAssessment.evidence_confidence_level,
+        },
+        verification_checklist: existingChecklist,
+        assessment_notes: existingAssessment.assessment_notes,
+        assessed_at: existingAssessment.assessed_at,
+      }
+  : undefined;
+
+const payloadToSave = {
+  ...assessmentPayload,
+  verification_checklist: {
+    ...existingChecklist,
+    ...incomingChecklist,
+    ...(legacySnapshot !== undefined
+      ? { __legacy_promoter_assessment_v1: legacySnapshot }
+      : {}),
+  },
+};
+
 const { data, error } = existingAssessment
   ? await supabaseAdmin
       .from("blacklist_promoter_assessments")
-      .update(assessmentPayload)
+      .update(payloadToSave)
       .eq("id", existingAssessment.id)
       .select()
       .single()
   : await supabaseAdmin
       .from("blacklist_promoter_assessments")
-      .insert(assessmentPayload)
+      .insert(payloadToSave)
       .select()
       .single();
 
