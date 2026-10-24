@@ -72,7 +72,15 @@ const assessmentPayload = {
   evidence_strength,
   evidence_confidence_score,
   evidence_confidence_level:
-    evidence_confidence_level?.toLowerCase(),
+    Number(evidence_confidence_score ?? evidence_strength ?? 0) >= 13
+      ? "very strong evidence"
+      : Number(evidence_confidence_score ?? evidence_strength ?? 0) >= 10
+        ? "strong evidence"
+        : Number(evidence_confidence_score ?? evidence_strength ?? 0) >= 7
+          ? "moderate evidence"
+          : Number(evidence_confidence_score ?? evidence_strength ?? 0) >= 4
+            ? "limited evidence"
+            : "very limited evidence",
 
   assessment_notes,
 

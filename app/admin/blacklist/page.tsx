@@ -2991,6 +2991,9 @@ async function savePromoterAssessment() {
           evidence_confidence_score:
             evidenceConfidenceScore,
 
+          evidence_confidence_level:
+            evidenceConfidenceLevel.label,
+
           verification_checklist: {
             __promoter_risk_version: "v2",
             ...promoterChecklistSelections,
